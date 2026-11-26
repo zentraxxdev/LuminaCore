@@ -1,5 +1,5 @@
 #define MyAppName "LuminaCore"
-#define MyAppVersion "2.0.0"
+#define MyAppVersion "2.1.0"
 #define MyAppPublisher "LuminaCore"
 #define MyAppURL "https://luminacore.github.io"
 #define MyAppExeName "LuminaCore.exe"

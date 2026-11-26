@@ -159,7 +159,8 @@ public partial class MainWindow : Window
                 "LuminaCore", "WebView2");
             Directory.CreateDirectory(userDataDir);
 
-            var env = await CoreWebView2Environment.CreateAsync(null, userDataDir);
+            var wvOpts = new CoreWebView2EnvironmentOptions("--renderer-process-limit=1 --disable-features=Translate,BackForwardCache --js-flags=--max-old-space-size=64");
+            var env = await CoreWebView2Environment.CreateAsync(null, userDataDir, wvOpts);
             await WebView.EnsureCoreWebView2Async(env);
 
             WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
@@ -477,20 +478,20 @@ public partial class MainWindow : Window
 
     private async Task CheckGitHubUpdatesAsync()
     {
-        string message = "You are on the latest version (v2.0.0) ✓";
+        string message = "You are on the latest version (v2.1.0) ✓";
         try
         {
             using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-            http.DefaultRequestHeaders.UserAgent.ParseAdd("LuminaCore-Updater/2.0");
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("LuminaCore-Updater/2.1");
             string json = await http.GetStringAsync("https://api.github.com/repos/zentraxxdev/LuminaCore/releases/latest");
             var obj = JObject.Parse(json);
             string? tag = obj["tag_name"]?.ToString();
-            if (!string.IsNullOrWhiteSpace(tag) && !tag.Contains("2.0"))
+            if (!string.IsNullOrWhiteSpace(tag) && !tag.Contains("2.1"))
                 message = $"New release available: {tag}";
         }
         catch
         {
-            message = "Running LuminaCore v2.0.0 (Offline / No newer release found)";
+            message = "Running LuminaCore v2.1.0 (Offline / No newer release found)";
         }
 
         await Dispatcher.InvokeAsync(() =>
@@ -746,6 +747,7 @@ public partial class MainWindow : Window
             _liveTickTimer.Stop();
             _pipeline.UiPreviewEnabled = false;
             Hide();
+            _ = WebView?.CoreWebView2?.TrySuspendAsync();
             TrimWorkingSetForTray();
             return;
         }

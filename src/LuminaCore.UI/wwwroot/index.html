@@ -457,6 +457,64 @@
   }
   #toast.show { opacity: 1; transform: translateY(0); }
 
+  /* Smooth GPU-Composited UI Animations (Low-RAM) */
+  .page.active { animation: pageFadeSlide 0.22s cubic-bezier(.16,1,.3,1); }
+  @keyframes pageFadeSlide {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card, .theme-card {
+    transition: transform 0.18s cubic-bezier(.16,1,.3,1), border-color 0.2s, box-shadow 0.2s;
+  }
+  .card:hover, .theme-card:hover { transform: translateY(-2px); }
+
+  /* Welcome Wizard & Interactive Tour */
+  .welcome-overlay {
+    position: fixed; inset: 0; z-index: 250;
+    background: rgba(4, 6, 11, 0.84); backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeInOverlay 0.28s ease;
+  }
+  @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
+  .welcome-card {
+    width: 520px; max-width: 92vw;
+    background: linear-gradient(160deg, rgba(16, 21, 34, 0.96), rgba(10, 12, 20, 0.98));
+    border: 1px solid rgba(0, 229, 255, 0.28); border-radius: 18px; padding: 26px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.75), 0 0 42px rgba(0, 229, 255, 0.14);
+    display: flex; flex-direction: column; gap: 16px;
+    animation: cardPop 0.32s cubic-bezier(.16,1,.3,1);
+  }
+  @keyframes cardPop { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .welcome-ring {
+    width: 44px; height: 44px; border-radius: 50%; border: 3px solid transparent;
+    background: linear-gradient(#0b0e17, #0b0e17) padding-box, linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) border-box;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.45);
+    animation: spinRing 5s linear infinite;
+  }
+  @keyframes spinRing { to { transform: rotate(360deg); } }
+  .welcome-steps-dots { display: flex; gap: 6px; align-items: center; }
+  .w-dot { width: 8px; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.16); transition: all 0.25s; }
+  .w-dot.active { width: 22px; background: var(--accent-primary); }
+  .starter-themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .starter-pill {
+    padding: 10px; border-radius: 10px; border: 1px solid var(--border-subtle);
+    background: rgba(255,255,255,0.04); color: white; font-size: 12px; font-weight: 600;
+    cursor: pointer; text-align: center; transition: all 0.18s;
+  }
+  .starter-pill:hover, .starter-pill.active { border-color: var(--accent-primary); background: rgba(0,229,255,0.12); }
+
+  .tour-highlight {
+    position: relative; z-index: 245 !important;
+    box-shadow: 0 0 0 2px var(--accent-primary), 0 0 24px rgba(0, 229, 255, 0.45) !important;
+    border-radius: 10px;
+  }
+  .tour-bubble {
+    position: fixed; z-index: 260; width: 310px;
+    background: #101522; border: 1px solid var(--accent-primary); border-radius: 13px; padding: 15px;
+    box-shadow: 0 18px 46px rgba(0,0,0,0.75);
+    animation: cardPop 0.22s cubic-bezier(.16,1,.3,1);
+  }
+
   .hidden { display: none !important; }
 </style>
 </head>
@@ -829,12 +887,13 @@
             <div id="scat-about" class="hidden">
               <div class="page-title" style="margin-bottom:14px">About LuminaCore</div>
               <div class="card">
-                <div style="font-weight:700;font-size:15px;color:var(--accent-primary);margin-bottom:4px">LuminaCore v2.0 • .NET 8 Native HID + WebView2</div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">User-space 60 FPS ARGB Lighting Engine with Lua Hot-Reload &amp; Pro HID Calibration</div>
-                <div style="display:flex;gap:8px">
+                <div style="font-weight:700;font-size:15px;color:var(--accent-primary);margin-bottom:4px">LuminaCore v2.1 • .NET 8 Native HID + WebView2</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">User-space 60 FPS ARGB Lighting Engine • Low-RAM Tray Suspend • Interactive Onboarding</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
                   <button class="btn" id="s-btn-folder">Open Config Folder</button>
                   <button class="btn btn-accent" id="s-btn-export">Export Profiles Backup</button>
                   <button class="btn" id="s-btn-update">Check for Updates</button>
+                  <button class="btn" id="s-btn-tour">Replay Welcome &amp; Tour</button>
                 </div>
               </div>
             </div>
@@ -1169,8 +1228,11 @@ function renderStudioChannels() {
   box.querySelectorAll('[data-st-z]').forEach(chk => chk.onchange = () => post('toggleZone', { zoneIndex: +chk.dataset.stZ, enabled: chk.checked }));
 }
 
-/* Single requestAnimationFrame Canvas Render Loop (Zero DOM CSS Thrashing) */
+/* Single requestAnimationFrame Canvas Render Loop (Zero DOM CSS Thrashing, pauses when hidden) */
+let rafActive = false;
 function animationFrameLoop() {
+  if (document.hidden) { rafActive = false; return; }
+  rafActive = true;
   const drawStrip = (canvasId, colors) => {
     const cv = document.getElementById(canvasId);
     if (!cv || !colors || colors.length === 0) return;
@@ -1188,6 +1250,9 @@ function animationFrameLoop() {
   }
   requestAnimationFrame(animationFrameLoop);
 }
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && !rafActive) requestAnimationFrame(animationFrameLoop);
+});
 
 /* 2D HSV Picker */
 let curH = 186, curS = 1, curV = 1;
@@ -1633,6 +1698,170 @@ applyTheme(initTheme, false);
 renderLibraryGrid();
 requestAnimationFrame(animationFrameLoop);
 post('ready');
+</script>
+
+<!-- WELCOME WIZARD & INTERACTIVE ONBOARDING TOUR -->
+<div id="welcome-overlay" class="welcome-overlay hidden">
+  <div class="welcome-card">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="welcome-ring"></div>
+        <div>
+          <div style="font-size:17px;font-weight:800" id="w-title">Welcome to LuminaCore v2.1</div>
+          <div style="font-size:11.5px;color:var(--text-secondary)" id="w-sub">60 FPS User-Space ARGB • Anti-Cheat Safe</div>
+        </div>
+      </div>
+      <div class="welcome-steps-dots">
+        <span class="w-dot active" id="wd-0"></span>
+        <span class="w-dot" id="wd-1"></span>
+        <span class="w-dot" id="wd-2"></span>
+      </div>
+    </div>
+
+    <div id="w-step-0">
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.55;margin-bottom:12px">
+        Control your motherboard ARGB headers, WLED Wi-Fi strips, Screen Ambilight, and Audio Visualizer at a locked 60 FPS with zero kernel drivers. When minimized to tray, LuminaCore suspends its UI to save RAM.
+      </p>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="setWelcomeLang('en')">English</button>
+        <button class="btn" onclick="setWelcomeLang('tr')">Türkçe</button>
+      </div>
+    </div>
+
+    <div id="w-step-1" class="hidden">
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.55;margin-bottom:10px">
+        Pick your starter Unified Theme (you can customize 24+ themes or create your own anytime):
+      </p>
+      <div class="starter-themes">
+        <div class="starter-pill active" onclick="pickStarterTheme('cyberpunk-neon', this)">Cyberpunk Neon</div>
+        <div class="starter-pill" onclick="pickStarterTheme('obsidian-stealth', this)">Obsidian Stealth</div>
+        <div class="starter-pill" onclick="pickStarterTheme('northern-aurora', this)">Northern Aurora</div>
+      </div>
+    </div>
+
+    <div id="w-step-2" class="hidden">
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.55">
+        Quick tips before you start:<br>
+        • Press <b>Ctrl+Alt+L</b> anytime for instant Blackout.<br>
+        • Open <b>Devices</b> to fix GRB/RGB color order or calibrate exact LED counts.<br>
+        • Click <b>Start Tour</b> below for a 20-second interactive walkthrough!
+      </p>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <button class="btn" id="w-skip">Skip</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-accent" id="w-next">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tour-bubble" class="tour-bubble hidden">
+  <div style="font-size:13px;font-weight:700;color:var(--accent-primary);margin-bottom:4px" id="tb-title">Step</div>
+  <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px" id="tb-desc">Desc</div>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <span style="font-size:11px;color:var(--text-secondary)" id="tb-count">1 / 4</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn" style="padding:5px 10px;font-size:11px" id="tb-end">Close</button>
+      <button class="btn btn-accent" style="padding:5px 12px;font-size:11px" id="tb-next">Next</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function initOnboarding() {
+  const overlay = document.getElementById('welcome-overlay');
+  const nextBtn = document.getElementById('w-next');
+  const skipBtn = document.getElementById('w-skip');
+  let step = 0;
+
+  window.setWelcomeLang = function(l) {
+    if (typeof currentLang !== 'undefined') {
+      currentLang = l;
+      localStorage.setItem('lumina_lang', l);
+      if (typeof applyI18n === 'function') applyI18n();
+    }
+    showToast(l === 'tr' ? 'Dil Türkçe olarak ayarlandı ✓' : 'Language set to English ✓');
+  };
+
+  window.pickStarterTheme = function(id, el) {
+    document.querySelectorAll('.starter-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    const t = BUILTIN_THEMES.find(x => x.id === id);
+    if (t) applyTheme(t, true);
+  };
+
+  function renderWizardStep() {
+    [0, 1, 2].forEach(i => {
+      document.getElementById(`w-step-${i}`).classList.toggle('hidden', i !== step);
+      document.getElementById(`wd-${i}`).classList.toggle('active', i === step);
+    });
+    nextBtn.textContent = step === 2 ? 'Start Tour ✨' : 'Next →';
+  }
+
+  function openWelcome() {
+    step = 0;
+    renderWizardStep();
+    overlay.classList.remove('hidden');
+  }
+
+  function finishWelcome(runTour) {
+    overlay.classList.add('hidden');
+    localStorage.setItem('lumina_onboarded_v21', '1');
+    if (runTour) startTour();
+  }
+
+  nextBtn.onclick = () => {
+    if (step < 2) { step++; renderWizardStep(); }
+    else finishWelcome(true);
+  };
+  skipBtn.onclick = () => finishWelcome(false);
+  document.getElementById('s-btn-tour').onclick = () => openWelcome();
+
+  const tourSteps = [
+    { sel: '.nav-rail', title: 'Navigation Rail', desc: 'Switch between Themes, Lua Library, Lighting Studio, USB Devices, Game Profiles, and Cooling.' },
+    { sel: '[data-page="devices"]', title: 'Devices & HID Calibration', desc: 'Inspect your USB HID controller, fix RGB/GRB color order, and calibrate exact LED counts.' },
+    { sel: '.player-bar', title: 'Persistent Player Bar', desc: 'Control Play/Pause, Master Brightness, Blackout, and monitor 60 FPS HID telemetry from anywhere.' },
+    { sel: '#btn-blackout', title: 'Instant Blackout (Ctrl+Alt+L)', desc: 'Turn all hardware LEDs off immediately with one click or the global Ctrl+Alt+L shortcut.' }
+  ];
+  let tIdx = 0;
+  const bubble = document.getElementById('tour-bubble');
+
+  function clearHighlight() {
+    document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+  }
+
+  function showTourStep() {
+    clearHighlight();
+    const s = tourSteps[tIdx];
+    const target = document.querySelector(s.sel);
+    if (!target) { endTour(); return; }
+    target.classList.add('tour-highlight');
+    const r = target.getBoundingClientRect();
+    bubble.classList.remove('hidden');
+    const left = Math.min(window.innerWidth - 330, Math.max(16, r.right + 14 > window.innerWidth - 320 ? r.left : r.right + 14));
+    const top = Math.min(window.innerHeight - 170, Math.max(46, r.top));
+    bubble.style.left = left + 'px';
+    bubble.style.top = top + 'px';
+    document.getElementById('tb-title').textContent = s.title;
+    document.getElementById('tb-desc').textContent = s.desc;
+    document.getElementById('tb-count').textContent = `${tIdx + 1} / ${tourSteps.length}`;
+    document.getElementById('tb-next').textContent = tIdx === tourSteps.length - 1 ? 'Finish ✓' : 'Next →';
+  }
+
+  function startTour() { tIdx = 0; showTourStep(); }
+  function endTour() { clearHighlight(); bubble.classList.add('hidden'); }
+  document.getElementById('tb-end').onclick = endTour;
+  document.getElementById('tb-next').onclick = () => {
+    if (tIdx < tourSteps.length - 1) { tIdx++; showTourStep(); }
+    else endTour();
+  };
+
+  if (!localStorage.getItem('lumina_onboarded_v21')) {
+    setTimeout(openWelcome, 450);
+  }
+})();
 </script>
 </body>
 </html>
