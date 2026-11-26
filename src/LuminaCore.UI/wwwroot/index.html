@@ -611,6 +611,7 @@
               <button class="filter-pill" data-filter="shaders">Shaders</button>
               <button class="filter-pill" data-filter="reactive">Reactive</button>
               <button class="filter-pill" data-filter="plugins">Plugins</button>
+              <button class="filter-pill" data-filter="community">Community</button>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
               <input type="text" class="input" id="lib-search" placeholder="Search effects &amp; plugins..." style="width:220px" />
@@ -884,7 +885,7 @@
             <div id="scat-about" class="hidden">
               <div class="page-title" style="margin-bottom:14px">About LuminaCore</div>
               <div class="card">
-                <div style="font-weight:700;font-size:15px;color:var(--accent-primary);margin-bottom:4px">LuminaCore v2.1 • .NET 8 Native HID + WebView2</div>
+                <div style="font-weight:700;font-size:15px;color:var(--accent-primary);margin-bottom:4px">LuminaCore v2.2 • .NET 8 Native HID + WebView2</div>
                 <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">User-space 60 FPS ARGB Lighting Engine • Low-RAM Tray Suspend • Interactive Onboarding</div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap">
                   <button class="btn" id="s-btn-folder">Open Config Folder</button>
@@ -1105,8 +1106,43 @@ function renderThemesGrid() {
   });
 }
 
-/* Library Grid (Built-in Effects + Hot-Reload Lua Plugins) */
+/* Library Grid (Built-in Effects + Hot-Reload Lua Plugins + Community Hub) */
+let communityCatalog = [];
 function renderLibraryGrid() {
+  const grid = document.getElementById('library-grid');
+  if (libFilter === 'community') {
+    const installedIds = new Set((state.plugins || []).map(p => p.id));
+    const list = communityCatalog.filter(it => !libQuery || (it.name + ' ' + it.description).toLowerCase().includes(libQuery));
+    if (list.length === 0) {
+      grid.innerHTML = `<div class="card" style="grid-column:1/-1;color:var(--text-secondary)">Loading community shaders from GitHub...</div>`;
+      return;
+    }
+    grid.innerHTML = list.map(it => {
+      const isInst = installedIds.has(it.id);
+      return `
+        <div class="visual-card">
+          <div class="card-banner" style="background:linear-gradient(135deg, ${it.accent || '#38bdf8'}, #18181b)">
+            <span class="card-badge plugin">${it.author || 'Community'}</span>
+          </div>
+          <div class="card-body" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <div>
+              <div class="card-title">${it.name}</div>
+              <div class="card-sub">${it.description}</div>
+            </div>
+            <button class="btn btn-sm ${isInst ? '' : 'btn-accent'} comm-inst-btn" data-url="${it.url}" data-file="${it.file}" ${isInst ? 'disabled' : ''}>${isInst ? 'Installed' : 'Install'}</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    grid.querySelectorAll('.comm-inst-btn').forEach(b => {
+      b.onclick = () => {
+        b.disabled = true; b.textContent = '...';
+        post('installCommunityPlugin', { url: b.dataset.url, file: b.dataset.file });
+      };
+    });
+    return;
+  }
+
   const plugins = (state.plugins || []).map(pl => ({
     id: pl.id, name: pl.name, desc: pl.description, cat: 'plugins', badge: 'PLUGIN', isPlugin: true,
     grad: `linear-gradient(135deg, ${pl.accent || '#10B981'}, #00E5FF, #8B5CF6)`
@@ -1117,7 +1153,6 @@ function renderLibraryGrid() {
     return true;
   });
 
-  const grid = document.getElementById('library-grid');
   grid.innerHTML = items.map(it => {
     const selected = it.isPlugin ? (state.activePluginId === it.id) : (!state.activePluginId && state.activeEffect === it.id);
     return `
@@ -1508,7 +1543,9 @@ document.querySelectorAll('#theme-filters .filter-pill').forEach(p => {
 document.querySelectorAll('#lib-filters .filter-pill').forEach(p => {
   p.onclick = () => {
     document.querySelectorAll('#lib-filters .filter-pill').forEach(x => x.classList.remove('active'));
-    p.classList.add('active'); libFilter = p.dataset.filter; renderLibraryGrid();
+    p.classList.add('active'); libFilter = p.dataset.filter;
+    if (libFilter === 'community' && communityCatalog.length === 0) post('fetchCommunityCatalog');
+    renderLibraryGrid();
   };
 });
 document.getElementById('lib-search').oninput = e => { libQuery = e.target.value.trim().toLowerCase(); renderLibraryGrid(); };
@@ -1686,6 +1723,7 @@ if (window.chrome && window.chrome.webview) {
     if (msg.type === 'state') applyState(msg.payload);
     else if (msg.type === 'tick') applyTick(msg.payload);
     else if (msg.type === 'toast') showToast(msg.message);
+    else if (msg.type === 'communityCatalog') { communityCatalog = msg.items || []; renderLibraryGrid(); }
   });
 }
 
@@ -1704,7 +1742,7 @@ post('ready');
       <div style="display:flex;align-items:center;gap:12px">
         <div class="welcome-ring"></div>
         <div>
-          <div style="font-size:17px;font-weight:800" id="w-title">Welcome to LuminaCore v2.1</div>
+          <div style="font-size:17px;font-weight:800" id="w-title">Welcome to LuminaCore v2.2</div>
           <div style="font-size:11.5px;color:var(--text-secondary)" id="w-sub">60 FPS User-Space ARGB • Anti-Cheat Safe</div>
         </div>
       </div>

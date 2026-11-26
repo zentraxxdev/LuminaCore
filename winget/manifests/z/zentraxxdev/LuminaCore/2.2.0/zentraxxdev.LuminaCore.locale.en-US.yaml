@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: zentraxxdev.LuminaCore
+PackageVersion: 2.2.0
+PackageLocale: en-US
+Publisher: zentraxxdev
+PublisherUrl: https://github.com/zentraxxdev/LuminaCore
+PublisherSupportUrl: https://github.com/zentraxxdev/LuminaCore/issues
+PackageName: LuminaCore
+PackageUrl: https://zentraxxdev.github.io/LuminaCore/
+License: MIT
+LicenseUrl: https://github.com/zentraxxdev/LuminaCore/blob/main/LICENSE
+ShortDescription: 60 FPS user-space ARGB lighting controller for Windows
+Description: Open-source 60 FPS native USB HID ARGB controller with Lua hot-reload plugins, DXGI Ambilight, WASAPI audio visualizer, WLED Wi-Fi sync, and Game Profiles.
+Tags:
+- argb
+- rgb
+- hid
+- lighting
+- wled
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+PackageIdentifier: zentraxxdev.LuminaCore
+PackageVersion: 2.2.0
+InstallerType: inno
+Scope: user
+UpgradeBehavior: install
+Installers:
+- Architecture: x64
+  InstallerUrl: https://github.com/zentraxxdev/LuminaCore/releases/download/v2.2.0/LuminaCore-Setup-v2.2.0.exe
+  InstallerSha256: 73D043055AD5CD0B6B47F4E9B52F63A6C611D622C8E7ABCDACFBA3AC85933C62
+ManifestType: installer
+ManifestVersion: 1.6.0

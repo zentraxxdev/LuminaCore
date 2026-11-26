@@ -1,5 +1,5 @@
 #define MyAppName "LuminaCore"
-#define MyAppVersion "2.1.0"
+#define MyAppVersion "2.2.0"
 #define MyAppPublisher "LuminaCore"
 #define MyAppURL "https://luminacore.github.io"
 #define MyAppExeName "LuminaCore.exe"
@@ -15,6 +15,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 LicenseFile=..\LICENSE
+SetupIconFile=..\src\LuminaCore.UI\Assets\LuminaCore.ico
 OutputDir=..\dist
 OutputBaseFilename=LuminaCore-Setup-v{#MyAppVersion}
 Compression=lzma2/ultra64

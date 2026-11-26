@@ -1,0 +1,38 @@
+[
+  {
+    "id": "plugin:cyber_rain",
+    "file": "cyber_rain.lua",
+    "name": "Cyber Rain",
+    "author": "zentraxxdev",
+    "description": "Sharp cyan & indigo digital rain droplets along LED strips",
+    "accent": "#00E5FF",
+    "url": "https://raw.githubusercontent.com/zentraxxdev/LuminaCore/main/community/plugins/cyber_rain.lua"
+  },
+  {
+    "id": "plugin:solar_flare",
+    "file": "solar_flare.lua",
+    "name": "Solar Flare",
+    "author": "zentraxxdev",
+    "description": "Molten amber & crimson corona waves",
+    "accent": "#F97316",
+    "url": "https://raw.githubusercontent.com/zentraxxdev/LuminaCore/main/community/plugins/solar_flare.lua"
+  },
+  {
+    "id": "plugin:vapor_horizon",
+    "file": "vapor_horizon.lua",
+    "name": "Vapor Horizon",
+    "author": "zentraxxdev",
+    "description": "Smooth magenta-to-cyan twilight gradient sweep",
+    "accent": "#EC4899",
+    "url": "https://raw.githubusercontent.com/zentraxxdev/LuminaCore/main/community/plugins/vapor_horizon.lua"
+  },
+  {
+    "id": "plugin:matrix_pulse",
+    "file": "matrix_pulse.lua",
+    "name": "Phosphor Pulse",
+    "author": "zentraxxdev",
+    "description": "Crisp emerald data pulses on dark phosphor background",
+    "accent": "#10B981",
+    "url": "https://raw.githubusercontent.com/zentraxxdev/LuminaCore/main/community/plugins/matrix_pulse.lua"
+  }
+]

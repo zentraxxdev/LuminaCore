@@ -311,6 +311,19 @@ public partial class MainWindow : Window
                     try { Process.Start(new ProcessStartInfo("explorer.exe", _pluginManager.PluginsDirectory) { UseShellExecute = true }); } catch { }
                     break;
 
+                case "fetchCommunityCatalog":
+                    _ = FetchCommunityCatalogAsync();
+                    break;
+
+                case "installCommunityPlugin":
+                {
+                    string? url = msg["url"]?.ToString();
+                    string? file = msg["file"]?.ToString();
+                    if (!string.IsNullOrWhiteSpace(url) && !string.IsNullOrWhiteSpace(file))
+                        _ = InstallCommunityPluginAsync(url, file);
+                    break;
+                }
+
                 case "setBrightness":
                     _viewModel.MasterBrightness = msg["value"]?.Value<double>() ?? _viewModel.MasterBrightness;
                     break;
@@ -476,22 +489,74 @@ public partial class MainWindow : Window
         catch { }
     }
 
+    private async Task FetchCommunityCatalogAsync()
+    {
+        try
+        {
+            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("LuminaCore/2.2");
+            string json = await http.GetStringAsync("https://raw.githubusercontent.com/zentraxxdev/LuminaCore/main/community/catalog.json");
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (_webViewReady && WebView.CoreWebView2 is not null)
+                    WebView.CoreWebView2.PostWebMessageAsJson(JsonConvert.SerializeObject(new { type = "communityCatalog", items = JArray.Parse(json) }));
+            });
+        }
+        catch (Exception ex)
+        {
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (_webViewReady && WebView.CoreWebView2 is not null)
+                    WebView.CoreWebView2.PostWebMessageAsJson(JsonConvert.SerializeObject(new { type = "toast", message = $"Community fetch failed: {ex.Message}" }));
+            });
+        }
+    }
+
+    private async Task InstallCommunityPluginAsync(string url, string fileName)
+    {
+        try
+        {
+            string safeName = Path.GetFileName(fileName);
+            if (!safeName.EndsWith(".lua", StringComparison.OrdinalIgnoreCase)) return;
+            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("LuminaCore/2.2");
+            string code = await http.GetStringAsync(url);
+            string target = Path.Combine(_pluginManager.PluginsDirectory, safeName);
+            await File.WriteAllTextAsync(target, code);
+            await Dispatcher.InvokeAsync(() =>
+            {
+                _pluginManager.ReloadAll();
+                PushFullStateToWeb();
+                if (_webViewReady && WebView.CoreWebView2 is not null)
+                    WebView.CoreWebView2.PostWebMessageAsJson(JsonConvert.SerializeObject(new { type = "toast", message = $"Installed {safeName}" }));
+            });
+        }
+        catch (Exception ex)
+        {
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (_webViewReady && WebView.CoreWebView2 is not null)
+                    WebView.CoreWebView2.PostWebMessageAsJson(JsonConvert.SerializeObject(new { type = "toast", message = $"Install failed: {ex.Message}" }));
+            });
+        }
+    }
+
     private async Task CheckGitHubUpdatesAsync()
     {
-        string message = "You are on the latest version (v2.1.0) ✓";
+        string message = "You are on the latest version (v2.2.0)";
         try
         {
             using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-            http.DefaultRequestHeaders.UserAgent.ParseAdd("LuminaCore-Updater/2.1");
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("LuminaCore-Updater/2.2");
             string json = await http.GetStringAsync("https://api.github.com/repos/zentraxxdev/LuminaCore/releases/latest");
             var obj = JObject.Parse(json);
             string? tag = obj["tag_name"]?.ToString();
-            if (!string.IsNullOrWhiteSpace(tag) && !tag.Contains("2.1"))
+            if (!string.IsNullOrWhiteSpace(tag) && !tag.Contains("2.2"))
                 message = $"New release available: {tag}";
         }
         catch
         {
-            message = "Running LuminaCore v2.1.0 (Offline / No newer release found)";
+            message = "Running LuminaCore v2.2.0 (Offline / No newer release found)";
         }
 
         await Dispatcher.InvokeAsync(() =>

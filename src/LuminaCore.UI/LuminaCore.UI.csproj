@@ -9,6 +9,7 @@
     <AssemblyName>LuminaCore</AssemblyName>
     <RootNamespace>LuminaCore.UI</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationIcon>Assets\LuminaCore.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\LuminaCore.Core\LuminaCore.Core.csproj" />
