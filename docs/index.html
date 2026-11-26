@@ -3,27 +3,23 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>LuminaCore — 60 FPS User-Space ARGB Lighting Suite</title>
-<meta name="description" content="Zero-bloat, anti-cheat safe, locked 60 FPS native Direct USB HID ARGB controller for Windows. Unified themes, Lua shaders, DXGI Ambilight, WLED Wi-Fi & Game Profiles." />
+<title>LuminaCore — User-Space ARGB Controller for Windows</title>
+<meta name="description" content="Open-source 60 FPS native USB HID ARGB lighting controller for Windows. No kernel drivers, no ads, no background bloat." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #05060a;
-    --bg-elevated: #0b0d15;
-    --card: rgba(14, 17, 27, 0.72);
-    --card-hover: rgba(20, 24, 38, 0.9);
-    --border: rgba(255, 255, 255, 0.08);
-    --border-bright: rgba(255, 255, 255, 0.16);
-    --accent: #00E5FF;
-    --accent-2: #8B5CF6;
-    --accent-3: #EC4899;
-    --glow: rgba(0, 229, 255, 0.28);
-    --text: #F8FAFC;
-    --muted: #94A3B8;
-    --dim: #64748B;
-    --green: #10B981;
+    --bg: #09090b;
+    --surface: #111114;
+    --surface-2: #18181b;
+    --border: #27272a;
+    --border-hover: #3f3f46;
+    --text: #fafafa;
+    --muted: #a1a1aa;
+    --dim: #71717a;
+    --accent: #38bdf8;
+    --green: #22c55e;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,606 +27,313 @@
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Inter', 'Segoe UI Variable', -apple-system, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     line-height: 1.6;
-    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Ambient Background Layers */
-  .bg-grid {
-    position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background-image:
-      linear-gradient(to right, rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255,255,255,0.025) 1px, transparent 1px);
-    background-size: 56px 56px;
-    mask-image: radial-gradient(ellipse 85% 65% at 50% 0%, black 35%, transparent 100%);
-  }
-  .aura-top {
-    position: fixed; top: -260px; left: 50%; transform: translateX(-50%);
-    width: 1200px; height: 560px; border-radius: 50%;
-    background: radial-gradient(circle, var(--glow), rgba(139, 92, 246, 0.18), transparent 70%);
-    filter: blur(115px); pointer-events: none; z-index: 0;
-    transition: background 0.5s ease;
-    animation: auraFloat 9s ease-in-out infinite alternate;
-  }
-  @keyframes auraFloat {
-    0% { transform: translateX(-50%) translateY(0) scale(1); }
-    100% { transform: translateX(-48%) translateY(22px) scale(1.06); }
-  }
-  #particleBg {
-    position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.55;
-  }
+  .container { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
 
-  .container { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; padding: 0 24px; }
-
-  /* Sticky Glass Navbar */
   header {
     position: sticky; top: 0; z-index: 50;
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-    background: rgba(5, 6, 10, 0.72);
+    background: rgba(9, 9, 11, 0.88);
+    backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
   }
   nav {
-    max-width: 1160px; margin: 0 auto; padding: 14px 24px;
+    max-width: 1040px; margin: 0 auto; padding: 14px 24px;
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
   }
-  .brand { display: flex; align-items: center; gap: 11px; font-size: 17px; font-weight: 700; text-decoration: none; color: #fff; letter-spacing: -0.02em; }
-  .ring {
-    width: 21px; height: 21px; border-radius: 50%; border: 3px solid transparent;
-    background: linear-gradient(var(--bg), var(--bg)) padding-box, linear-gradient(135deg, var(--accent), var(--accent-2), var(--accent-3)) border-box;
-    box-shadow: 0 0 18px var(--glow);
-    animation: spinSlow 6s linear infinite;
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 600; color: var(--text); text-decoration: none; letter-spacing: -0.01em;
   }
-  @keyframes spinSlow { to { transform: rotate(360deg); } }
-  .brand span { color: var(--accent); transition: color 0.3s ease; }
-
-  .nav-links { display: flex; gap: 26px; align-items: center; }
-  .nav-links a { color: var(--muted); text-decoration: none; font-size: 13.5px; font-weight: 500; transition: color 0.15s; }
-  .nav-links a:hover { color: #fff; }
-
-  .nav-actions { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2.5px solid var(--accent);
+  }
+  .nav-links { display: flex; gap: 24px; align-items: center; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 13.5px; transition: color 0.15s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-right { display: flex; align-items: center; gap: 10px; }
   .lang-btn {
-    background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-    color: var(--text); padding: 6px 11px; border-radius: 8px; font-size: 12px; font-weight: 600;
-    cursor: pointer; transition: all 0.15s;
+    background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+    padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer;
   }
-  .lang-btn:hover { border-color: var(--border-bright); background: rgba(255,255,255,0.1); }
-  .nav-cta {
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    color: #05060a; padding: 7px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 700;
-    text-decoration: none; transition: transform 0.15s, box-shadow 0.2s;
-  }
-  .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 22px var(--glow); }
+  .lang-btn:hover { color: var(--text); border-color: var(--border-hover); }
 
   /* Hero */
-  .hero { padding: 68px 0 40px; text-align: center; }
-  .pill-badge {
-    display: inline-flex; align-items: center; gap: 8px; padding: 6px 15px; border-radius: 999px;
-    background: rgba(255,255,255,0.04); border: 1px solid var(--border-bright);
-    font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 22px;
-    box-shadow: 0 0 24px rgba(0, 229, 255, 0.08);
-  }
-  .pulse-dot {
-    width: 7px; height: 7px; border-radius: 50%; background: var(--green);
-    box-shadow: 0 0 10px var(--green); animation: pulse 2s infinite;
-  }
-  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.85); } }
-
-  h1 {
-    font-size: clamp(38px, 5.4vw, 64px); font-weight: 800; letter-spacing: -0.035em; line-height: 1.07;
+  .hero { padding: 72px 0 48px; }
+  .ver-line {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted);
     margin-bottom: 18px;
   }
-  .grad-text {
-    background: linear-gradient(95deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent));
-    background-size: 220% auto;
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    animation: shimmerText 6s linear infinite;
+  .ver-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  h1 {
+    font-size: clamp(32px, 4.5vw, 48px); font-weight: 700; letter-spacing: -0.03em; line-height: 1.12;
+    max-width: 720px; margin-bottom: 16px;
   }
-  @keyframes shimmerText { to { background-position: 220% center; } }
-
   .hero-sub {
-    max-width: 670px; margin: 0 auto 30px; color: var(--muted); font-size: 17px; line-height: 1.65;
+    max-width: 600px; color: var(--muted); font-size: 16px; margin-bottom: 28px;
   }
-  .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 44px; }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 44px; }
   .btn {
-    display: inline-flex; align-items: center; gap: 9px; padding: 13px 24px; border-radius: 11px;
-    font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; border: none;
-    transition: all 0.2s cubic-bezier(.16,1,.3,1);
+    display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 8px;
+    font-size: 13.5px; font-weight: 600; text-decoration: none; cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
   }
-  .btn-primary {
-    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #05060a; font-weight: 700;
-    box-shadow: 0 10px 32px var(--glow);
-  }
-  .btn-primary:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 14px 40px var(--glow); }
-  .btn-ghost { background: var(--card); border: 1px solid var(--border-bright); color: #fff; }
-  .btn-ghost:hover { background: var(--card-hover); transform: translateY(-2px); }
+  .btn-primary { background: var(--text); color: var(--bg); border: 1px solid var(--text); }
+  .btn-primary:hover { background: #e4e4e7; }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--surface-2); border-color: var(--border-hover); }
+  .cta-meta { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--dim); }
 
-  /* Interactive Desktop App Preview with Animated RGB Border */
-  .app-showcase-wrap {
-    position: relative; max-width: 1000px; margin: 0 auto; padding: 1.5px; border-radius: 20px;
-    background: linear-gradient(120deg, var(--accent), rgba(255,255,255,0.08), var(--accent-2), var(--accent-3));
-    background-size: 250% 250%; animation: borderFlow 7s ease infinite;
-    box-shadow: 0 32px 96px rgba(0, 0, 0, 0.8), 0 0 70px var(--glow);
+  /* Hardware Preview Panel */
+  .preview-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
   }
-  @keyframes borderFlow {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+  .preview-top {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
   }
-  .app-showcase {
-    border-radius: 18.5px; background: rgba(9, 11, 18, 0.96); overflow: hidden; text-align: left;
+  .preview-title { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+  .controls-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .chip {
+    background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+    padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
   }
-  .app-titlebar {
-    height: 40px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between;
-    background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border);
-  }
-  .win-dots { display: flex; gap: 7px; }
-  .win-dots span { width: 10px; height: 10px; border-radius: 50%; }
-  .win-dots span:nth-child(1) { background: #ef4444; }
-  .win-dots span:nth-child(2) { background: #f59e0b; }
-  .win-dots span:nth-child(3) { background: #10b981; }
-  .app-title-meta {
-    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--muted);
-    display: flex; align-items: center; gap: 12px;
-  }
-  .fps-chip {
-    padding: 2px 9px; border-radius: 999px; background: rgba(16, 185, 129, 0.14);
-    border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; font-weight: 600; font-size: 11px;
-  }
+  .chip:hover { color: var(--text); border-color: var(--border-hover); }
+  .chip.active { background: var(--surface-2); color: var(--text); border-color: #52525b; }
+  .swatch { width: 8px; height: 8px; border-radius: 50%; }
 
-  .app-body { display: grid; grid-template-columns: 185px 1fr; min-height: 390px; }
-  .app-rail {
-    border-right: 1px solid var(--border); padding: 14px 10px;
-    background: rgba(255,255,255,0.015); display: flex; flex-direction: column; gap: 4px;
-  }
-  .rail-item {
-    padding: 9px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 500;
-    color: var(--muted); display: flex; align-items: center; gap: 9px; cursor: pointer; transition: all 0.15s;
-  }
-  .rail-item.active { background: rgba(255,255,255,0.08); color: #fff; border-left: 2.5px solid var(--accent); }
-  .rail-item:hover:not(.active) { background: rgba(255,255,255,0.03); color: #fff; }
+  .canvas-wrap { padding: 18px 16px; background: #070709; }
+  #ledCanvas { width: 100%; height: 180px; display: block; }
 
-  .app-main { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
-  .demo-controls-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
-  .pill-group { display: flex; gap: 6px; flex-wrap: wrap; }
-  .t-pill {
-    padding: 5px 11px; border-radius: 8px; font-size: 11.5px; font-weight: 600;
-    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-    color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.18s;
+  .preview-bottom {
+    padding: 10px 16px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;
+    font-size: 12px; color: var(--muted);
   }
-  .t-pill:hover { color: #fff; border-color: var(--border-bright); }
-  .t-pill.active {
-    background: rgba(255,255,255,0.1); color: #fff; border-color: var(--accent);
-    box-shadow: 0 0 14px var(--glow);
-  }
-  .t-swatch { width: 9px; height: 9px; border-radius: 50%; }
-
-  /* Hardware Rig Canvas */
-  .canvas-stage {
-    position: relative; border-radius: 12px; border: 1px solid var(--border);
-    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.025), #040508 75%);
-    padding: 12px 14px; overflow: hidden;
-  }
-  .canvas-label {
-    display: flex; justify-content: space-between; align-items: center;
-    font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--dim); margin-bottom: 8px;
-  }
-  #ledCanvas { width: 100%; height: 190px; display: block; border-radius: 8px; }
-
-  /* Persistent Player Bar inside Mockup */
-  .app-player {
-    height: 54px; padding: 0 18px; border-top: 1px solid var(--border);
-    background: rgba(12, 14, 22, 0.92); display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  }
-  .player-left { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
-  .mini-orb { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 0 12px var(--glow); }
-  .player-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-  .ctrl-slider { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--muted); }
-  input[type="range"] { accent-color: var(--accent); cursor: pointer; width: 78px; }
-  .blackout-btn {
-    padding: 5px 11px; border-radius: 7px; font-size: 11.5px; font-weight: 600; cursor: pointer;
-    border: 1px solid var(--border-bright); background: rgba(255,255,255,0.06); color: #fff; transition: all 0.15s;
-  }
-  .blackout-btn.off { background: rgba(239,68,68,0.22); border-color: rgba(239,68,68,0.55); color: #fca5a5; }
-
-  /* Stats Ribbon */
-  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 48px auto 0; }
-  .stat-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; text-align: center;
-    transition: transform 0.2s, border-color 0.2s;
-  }
-  .stat-card:hover { transform: translateY(-2px); border-color: var(--border-bright); }
-  .stat-val {
-    font-size: 28px; font-weight: 800; letter-spacing: -0.03em;
-    background: linear-gradient(135deg, #fff, var(--accent));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
-  .stat-lbl { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
-
-  /* Scroll Reveal */
-  .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.65s cubic-bezier(.16,1,.3,1), transform 0.65s cubic-bezier(.16,1,.3,1); }
-  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .slider-group { display: flex; align-items: center; gap: 16px; }
+  .slider-item { display: flex; align-items: center; gap: 8px; }
+  input[type="range"] { accent-color: var(--text); width: 88px; cursor: pointer; }
 
   /* Sections */
-  .section { padding: 84px 0 20px; }
-  .section-eyebrow {
-    text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
-    font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); margin-bottom: 10px;
-  }
-  .section-title { font-size: clamp(26px, 3.6vw, 38px); font-weight: 800; text-align: center; letter-spacing: -0.025em; margin-bottom: 12px; }
-  .section-sub { text-align: center; color: var(--muted); max-width: 600px; margin: 0 auto 42px; font-size: 15.5px; }
+  .section { padding: 64px 0 0; }
+  .section-head { margin-bottom: 28px; }
+  .section-head h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .section-head p { color: var(--muted); font-size: 14.5px; }
 
-  /* Spotlight Bento Grid */
-  .bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-  .bento-card {
-    position: relative; overflow: hidden;
-    background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 26px;
-    backdrop-filter: blur(12px); transition: transform 0.2s, border-color 0.2s;
-    display: flex; flex-direction: column; gap: 12px;
+  /* Clean 2-col Feature List */
+  .feat-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px;
+    background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
   }
-  .bento-card::before {
-    content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s;
-    background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), var(--glow), transparent 70%);
-  }
-  .bento-card:hover::before { opacity: 0.45; }
-  .bento-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.22); }
-  .bento-icon {
-    width: 40px; height: 40px; border-radius: 10px; position: relative; z-index: 1;
-    background: rgba(255,255,255,0.05); border: 1px solid var(--border-bright);
-    display: flex; align-items: center; justify-content: center; color: var(--accent);
-  }
-  .bento-card h3 { font-size: 17px; font-weight: 700; color: #fff; position: relative; z-index: 1; }
-  .bento-card p { font-size: 13.8px; color: var(--muted); line-height: 1.6; position: relative; z-index: 1; }
-  .bento-tag {
-    margin-top: auto; align-self: flex-start; position: relative; z-index: 1;
-    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent);
-    background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.22);
-    padding: 3px 9px; border-radius: 6px;
+  .feat-cell { background: var(--surface); padding: 24px; }
+  .feat-cell h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+  .feat-cell p { font-size: 13.5px; color: var(--muted); line-height: 1.55; }
+  .feat-cell code {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    background: var(--bg); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; color: var(--text);
   }
 
-  /* Comparison Table */
-  .compare-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { padding: 16px 22px; text-align: left; border-bottom: 1px solid var(--border); }
-  th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); background: rgba(255,255,255,0.02); }
+  /* Hardware Table */
+  .table-wrap { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { padding: 13px 18px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { font-size: 12px; font-weight: 600; color: var(--dim); background: var(--bg); text-transform: uppercase; letter-spacing: 0.04em; }
   tr:last-child td { border-bottom: none; }
-  .col-lumina { color: #fff; font-weight: 600; background: rgba(0, 229, 255, 0.04); }
-  .yes { color: var(--green); font-weight: 700; }
-  .no { color: #f87171; }
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+  .tag-ok { color: var(--green); font-weight: 600; font-size: 12px; }
+  .tag-sup { color: var(--muted); font-size: 12px; }
 
-  /* Hardware Grid */
-  .hw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
-  .hw-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 13px; padding: 18px 20px;
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    transition: border-color 0.2s, transform 0.2s;
+  /* Download Box */
+  .dl-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;
   }
-  .hw-card:hover { border-color: var(--border-bright); transform: translateY(-2px); }
-  .hw-name { font-size: 14.5px; font-weight: 600; color: #fff; }
-  .hw-proto { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--dim); margin-top: 2px; }
-  .hw-status {
-    font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap;
-    background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.3);
-  }
-  .hw-status.beta { background: rgba(139,92,246,0.12); color: #c4b5fd; border-color: rgba(139,92,246,0.3); }
-
-  /* Download Cards */
-  .dl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-  .dl-card {
-    background: var(--card); border: 1px solid var(--border-bright); border-radius: 16px; padding: 28px;
-    display: flex; flex-direction: column; gap: 14px;
-  }
-  .code-box {
-    background: #040509; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px;
-    font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #e2e8f0;
-    overflow-x: auto; position: relative;
+  .code-block {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); position: relative;
+    line-height: 1.7;
   }
   .copy-btn {
-    position: absolute; top: 10px; right: 10px; padding: 4px 10px; border-radius: 6px;
-    background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: #fff;
-    font-size: 11px; font-weight: 600; cursor: pointer;
+    position: absolute; top: 10px; right: 10px; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); padding: 4px 9px; border-radius: 5px; font-size: 11px; cursor: pointer;
   }
-  .copy-btn:hover { background: rgba(255,255,255,0.15); }
+  .copy-btn:hover { border-color: var(--border-hover); }
 
   footer {
-    border-top: 1px solid var(--border); padding: 34px 0; margin-top: 84px;
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
-    color: var(--muted); font-size: 13px;
+    border-top: 1px solid var(--border); margin-top: 72px; padding: 28px 0 40px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    font-size: 13px; color: var(--dim);
   }
   footer a { color: var(--muted); text-decoration: none; }
-  footer a:hover { color: #fff; }
+  footer a:hover { color: var(--text); }
 
-  @media (max-width: 860px) {
-    .app-body { grid-template-columns: 1fr; }
-    .app-rail { display: none; }
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .bento { grid-template-columns: 1fr; }
-    .dl-grid { grid-template-columns: 1fr; }
+  @media (max-width: 760px) {
+    .feat-grid, .dl-box { grid-template-columns: 1fr; }
     .nav-links { display: none; }
   }
 </style>
 </head>
 <body>
-<div class="bg-grid"></div>
-<div class="aura-top"></div>
-<canvas id="particleBg"></canvas>
 
 <header>
   <nav>
-    <a class="brand" href="#"><div class="ring"></div> Lumina<span>Core</span></a>
+    <a class="brand" href="#"><span class="brand-mark"></span> LuminaCore</a>
     <div class="nav-links">
-      <a href="#demo" data-i18n="nav_demo">Live Studio</a>
-      <a href="#features" data-i18n="nav_features">Features</a>
-      <a href="#compare" data-i18n="nav_compare">Why LuminaCore</a>
+      <a href="#features" data-i18n="nav_feat">Features</a>
       <a href="#hardware" data-i18n="nav_hw">Hardware</a>
       <a href="#download" data-i18n="nav_dl">Download</a>
+      <a href="https://github.com/zentraxxdev/LuminaCore" target="_blank">GitHub</a>
     </div>
-    <div class="nav-actions">
-      <button class="lang-btn" id="langBtn" onclick="toggleLang()">TR / EN</button>
-      <a class="nav-cta" href="https://github.com/zentraxxdev/LuminaCore/releases/latest" data-i18n="nav_get">Get v2.1.0</a>
+    <div class="nav-right">
+      <button class="lang-btn" onclick="toggleLang()">TR / EN</button>
     </div>
   </nav>
 </header>
 
 <main class="container">
-  <!-- HERO -->
-  <section class="hero" id="demo">
-    <div class="pill-badge">
-      <span class="pulse-dot"></span>
-      <span data-i18n="hero_badge">v2.1.0 Released • 60 FPS User-Space USB HID • Anti-Cheat Safe</span>
+  <section class="hero">
+    <div class="ver-line">
+      <span class="ver-dot"></span>
+      <span data-i18n="ver_line">v2.1.0 • Windows 10/11 x64 • MIT Open Source</span>
     </div>
-    <h1>
-      <span data-i18n="hero_t1">Precision ARGB Control.</span><br>
-      <span class="grad-text" data-i18n="hero_t2">Zero Bloat. Zero Kernel Drivers.</span>
-    </h1>
+    <h1 data-i18n="hero_h1">User-space ARGB lighting control at 60 FPS.</h1>
     <p class="hero-sub" data-i18n="hero_sub">
-      LuminaCore drives your motherboard ARGB headers, WLED Wi-Fi strips, 60 FPS DXGI Screen Ambilight, and WASAPI Audio FFT — completely in user-space with sub-millisecond USB HID frame pacing.
+      Drives motherboard USB HID headers, WLED Wi-Fi strips, DXGI Screen Ambilight, and WASAPI audio visualization without kernel drivers, ads, or background bloat.
     </p>
     <div class="cta-row">
-      <a class="btn btn-primary" href="#download">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span data-i18n="cta_dl">Download Windows x64</span>
-      </a>
-      <a class="btn btn-ghost" href="https://github.com/zentraxxdev/LuminaCore" target="_blank">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.57.11.78-.25.78-.55v-1.94c-3.2.7-3.87-1.54-3.87-1.54-.52-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.25.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.18 1.18a11.05 11.05 0 0 1 5.8 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.58.23 2.75.11 3.04.74.8 1.19 1.83 1.19 3.08 0 4.41-2.69 5.39-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.79.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
-        <span data-i18n="cta_gh">Star on GitHub</span>
-      </a>
+      <a class="btn btn-primary" href="https://github.com/zentraxxdev/LuminaCore/releases/latest/download/LuminaCore-Setup-v2.1.0.exe" data-i18n="btn_setup">Download Installer (.exe)</a>
+      <a class="btn btn-secondary" href="https://github.com/zentraxxdev/LuminaCore/releases/latest/download/LuminaCore-Portable-v2.1.0-win-x64.zip" data-i18n="btn_zip">Portable ZIP</a>
+      <span class="cta-meta">51.8 MB • .NET 8 Self-Contained</span>
     </div>
 
-    <!-- INTERACTIVE APP PREVIEW -->
-    <div class="app-showcase-wrap">
-      <div class="app-showcase">
-        <div class="app-titlebar">
-          <div class="win-dots"><span></span><span></span><span></span></div>
-          <div class="app-title-meta">
-            <span>LuminaCore v2.1.0 — ASRock Polychrome USB (VID 0x26CE)</span>
-            <span class="fps-chip" id="fpsChip">USB HID • 60.0 FPS • 0.34 ms</span>
-          </div>
-        </div>
-
-        <div class="app-body">
-          <div class="app-rail">
-            <div class="rail-item active">Themes (24)</div>
-            <div class="rail-item">Library &amp; Lua</div>
-            <div class="rail-item">Lighting Studio</div>
-            <div class="rail-item">Devices &amp; HID</div>
-            <div class="rail-item">Game Profiles</div>
-            <div class="rail-item">Cooling</div>
-          </div>
-
-          <div class="app-main">
-            <div class="demo-controls-row">
-              <div class="pill-group" id="themePills">
-                <button class="t-pill active" onclick="setDemoTheme('cyber', this)"><span class="t-swatch" style="background:#00E5FF"></span>Cyberpunk</button>
-                <button class="t-pill" onclick="setDemoTheme('synth', this)"><span class="t-swatch" style="background:#F43F5E"></span>Synthwave</button>
-                <button class="t-pill" onclick="setDemoTheme('aurora', this)"><span class="t-swatch" style="background:#10B981"></span>Aurora</button>
-                <button class="t-pill" onclick="setDemoTheme('ember', this)"><span class="t-swatch" style="background:#F97316"></span>Ember</button>
-                <button class="t-pill" onclick="setDemoTheme('frost', this)"><span class="t-swatch" style="background:#38BDF8"></span>Frost</button>
-              </div>
-
-              <div class="pill-group" id="effectPills">
-                <button class="t-pill active" onclick="setEffect('wave', this)" data-i18n="eff_wave">Spectrum Wave</button>
-                <button class="t-pill" onclick="setEffect('audio', this)" data-i18n="eff_audio">Audio FFT</button>
-                <button class="t-pill" onclick="setEffect('plasma', this)" data-i18n="eff_plasma">Plasma Core</button>
-                <button class="t-pill" onclick="setEffect('pulse', this)" data-i18n="eff_pulse">Beat Strobe</button>
-              </div>
-            </div>
-
-            <div class="canvas-stage">
-              <div class="canvas-label">
-                <span>CH1: 3x ARGB FANS (48 LEDs) • GPU BAR • RAM DIMMS • CH2: DESK STRIP (30 LEDs)</span>
-                <span id="modeTag">SHADER: SPECTRUM WAVE</span>
-              </div>
-              <canvas id="ledCanvas" width="760" height="190"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="app-player">
-          <div class="player-left">
-            <div class="mini-orb"></div>
-            <div>
-              <div style="font-weight:700" id="activeThemeName">Cyberpunk Neon</div>
-              <div style="font-size:11px;color:var(--muted)" id="activeEffectSub">Spectrum Wave • Zero-Alloc HID</div>
-            </div>
-          </div>
-          <div class="player-controls">
-            <label class="ctrl-slider">
-              <span data-i18n="speed">Speed</span>
-              <input type="range" id="speedSlider" min="20" max="250" value="100" />
-            </label>
-            <label class="ctrl-slider">
-              <span data-i18n="bright">Brightness</span>
-              <input type="range" id="brightSlider" min="10" max="100" value="95" />
-            </label>
-            <button class="blackout-btn" id="blackoutBtn" onclick="toggleBlackout()">Lights On</button>
-          </div>
+    <div class="preview-panel">
+      <div class="preview-top">
+        <span class="preview-title">USB HID • 60.0 FPS • 0.34 ms</span>
+        <div class="controls-bar">
+          <button class="chip active" onclick="setTheme('cyber', this)"><span class="swatch" style="background:#00E5FF"></span>Cyan/Violet</button>
+          <button class="chip" onclick="setTheme('ember', this)"><span class="swatch" style="background:#F97316"></span>Ember</button>
+          <button class="chip" onclick="setTheme('aurora', this)"><span class="swatch" style="background:#10B981"></span>Aurora</button>
+          <button class="chip" onclick="setTheme('frost', this)"><span class="swatch" style="background:#93C5FD"></span>Ice</button>
+          <span style="color:var(--border-hover)">|</span>
+          <button class="chip active" onclick="setEffect('wave', this)" data-i18n="eff_wave">Wave</button>
+          <button class="chip" onclick="setEffect('audio', this)" data-i18n="eff_audio">Audio EQ</button>
+          <button class="chip" onclick="setEffect('plasma', this)" data-i18n="eff_plasma">Plasma</button>
         </div>
       </div>
-    </div>
 
-    <!-- STATS -->
-    <div class="stats-grid reveal">
-      <div class="stat-card"><div class="stat-val">60 FPS</div><div class="stat-lbl" data-i18n="stat1">Locked Hardware Loop</div></div>
-      <div class="stat-card"><div class="stat-val">&lt; 0.5 ms</div><div class="stat-lbl" data-i18n="stat2">USB HID Packet Latency</div></div>
-      <div class="stat-card"><div class="stat-val">0 Drivers</div><div class="stat-lbl" data-i18n="stat3">100% Anti-Cheat Safe</div></div>
-      <div class="stat-card"><div class="stat-val">24+</div><div class="stat-lbl" data-i18n="stat4">Unified UI + RGB Themes</div></div>
-    </div>
-  </section>
-
-  <!-- FEATURES BENTO -->
-  <section class="section reveal" id="features">
-    <div class="section-eyebrow" data-i18n="feat_eye">ARCHITECTURE</div>
-    <h2 class="section-title" data-i18n="feat_title">Engineered for Performance &amp; Control</h2>
-    <p class="section-sub" data-i18n="feat_sub">No bloated background services, no ads, and no kernel-level risk.</p>
-
-    <div class="bento">
-      <div class="bento-card">
-        <div class="bento-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
-        <h3 data-i18n="f1_t">Native Direct USB HID</h3>
-        <p data-i18n="f1_d">Communicates directly with motherboard RGB controllers via standard Windows HID using pre-allocated zero-GC byte buffers on a dedicated 60 FPS thread.</p>
-        <span class="bento-tag">HidSharp • Zero-Alloc</span>
+      <div class="canvas-wrap">
+        <canvas id="ledCanvas" width="960" height="180"></canvas>
       </div>
 
-      <div class="bento-card">
-        <div class="bento-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 1 0 10 10"/></svg></div>
-        <h3 data-i18n="f2_t">24 Unified Themes</h3>
-        <p data-i18n="f2_d">Switch both the glassmorphic desktop UI and multi-channel hardware choreography simultaneously, or share custom themes with compact codes.</p>
-        <span class="bento-tag">LUMINA-THEME-...</span>
-      </div>
-
-      <div class="bento-card">
-        <div class="bento-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
-        <h3 data-i18n="f3_t">Hot-Reload Lua Shaders</h3>
-        <p data-i18n="f3_d">Drop custom <code>.lua</code> shader scripts into <code>Plugins/</code> and watch them compile and appear live in your Library without restarting.</p>
-        <span class="bento-tag">MoonSharp • FileWatcher</span>
-      </div>
-
-      <div class="bento-card">
-        <div class="bento-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
-        <h3 data-i18n="f4_t">Pro HID Calibration</h3>
-        <p data-i18n="f4_d">Fix swapped channels (<code>RGB / GRB / BRG / RBG</code>) per header and calibrate exact fan/strip LED counts with the interactive green LED stepper.</p>
-        <span class="bento-tag">Per-Channel Mapping</span>
-      </div>
-
-      <div class="bento-card">
-        <div class="bento-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-        <h3 data-i18n="f5_t">DXGI Ambilight &amp; Audio FFT</h3>
-        <p data-i18n="f5_d">60 FPS GPU Desktop Duplication screen ambilight and 32-band WASAPI loopback audio spectrum reactive lighting with beat detection.</p>
-        <span class="bento-tag">DXGI • WASAPI 32-Band</span>
-      </div>
-
-      <div class="bento-card">
-        <div class="bento-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
-        <h3 data-i18n="f6_t">Game Profiles &amp; Web Remote</h3>
-        <p data-i18n="f6_d">Auto-switch lighting when your games launch, control RGB from your phone via <code>localhost:5050</code>, or hit <code>Ctrl+Alt+L</code> for instant Blackout.</p>
-        <span class="bento-tag">Auto-Switch • LAN Remote</span>
+      <div class="preview-bottom">
+        <span id="statusLabel">3x Fans (48 LEDs) • RAM • GPU Bar • Desk Strip (30 LEDs)</span>
+        <div class="slider-group">
+          <label class="slider-item"><span data-i18n="lbl_speed">Speed</span><input type="range" id="speedSlider" min="25" max="220" value="100"></label>
+          <label class="slider-item"><span data-i18n="lbl_bright">Brightness</span><input type="range" id="brightSlider" min="10" max="100" value="95"></label>
+          <button class="chip" id="blackoutBtn" onclick="toggleBlackout()">Blackout</button>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- COMPARISON -->
-  <section class="section reveal" id="compare">
-    <div class="section-eyebrow" data-i18n="cmp_eye">COMPARISON</div>
-    <h2 class="section-title" data-i18n="cmp_title">Why Switch from Vendor Bloatware?</h2>
-    <p class="section-sub" data-i18n="cmp_sub">Built to replace heavy background suites that conflict with competitive games.</p>
-    <div class="compare-wrap">
+  <section class="section" id="features">
+    <div class="section-head">
+      <h2 data-i18n="feat_h2">Technical Overview</h2>
+      <p data-i18n="feat_sub">Designed around predictable frame pacing, low background memory, and direct hardware access.</p>
+    </div>
+
+    <div class="feat-grid">
+      <div class="feat-cell">
+        <h3 data-i18n="f1_t">Direct USB HID (No Ring-0 Drivers)</h3>
+        <p data-i18n="f1_d">Runs completely in Windows user-space via <code>HidSharp</code> with pre-allocated byte buffers on a dedicated 60 FPS loop. Safe for Vanguard and Ricochet.</p>
+      </div>
+      <div class="feat-cell">
+        <h3 data-i18n="f2_t">Low-RAM Tray Suspend</h3>
+        <p data-i18n="f2_d">Minimizing to the system tray suspends the WebView2 Chromium renderer via <code>TrySuspendAsync()</code> while keeping the C# hardware loop active.</p>
+      </div>
+      <div class="feat-cell">
+        <h3 data-i18n="f3_t">Per-Channel HID Calibration</h3>
+        <p data-i18n="f3_d">Fix swapped <code>RGB / GRB / BRG / RBG</code> channels per header and step through individual green LEDs to calibrate exact fan and strip counts.</p>
+      </div>
+      <div class="feat-cell">
+        <h3 data-i18n="f4_t">Hot-Reload Lua Plugins</h3>
+        <p data-i18n="f4_d">Drop <code>.lua</code> shader scripts into <code>Plugins/</code> to load them live via MoonSharp without restarting the application.</p>
+      </div>
+      <div class="feat-cell">
+        <h3 data-i18n="f5_t">DXGI Ambilight &amp; WASAPI Audio FFT</h3>
+        <p data-i18n="f5_d">Captures screen colors using GPU Desktop Duplication and analyzes 32-band loopback audio for reactive lighting.</p>
+      </div>
+      <div class="feat-cell">
+        <h3 data-i18n="f6_t">Game Profiles &amp; Local Web Remote</h3>
+        <p data-i18n="f6_d">Bind lighting presets to <code>.exe</code> processes, control your setup over LAN via <code>localhost:5050</code>, or press <code>Ctrl+Alt+L</code> for instant blackout.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="hardware">
+    <div class="section-head">
+      <h2 data-i18n="hw_h2">Supported Hardware</h2>
+      <p data-i18n="hw_sub">Automatic controller discovery on startup and recovery after Windows sleep/wake.</p>
+    </div>
+
+    <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th data-i18n="cmp_c1">Capability</th>
-            <th class="col-lumina">LuminaCore v2.0</th>
-            <th data-i18n="cmp_c3">Vendor RGB Suites</th>
+            <th data-i18n="th_dev">Controller / Protocol</th>
+            <th data-i18n="th_proto">Transport</th>
+            <th data-i18n="th_stat">Status</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td data-i18n="r1_k">Kernel Drivers / Anti-Cheat Risk</td>
-            <td class="col-lumina yes" data-i18n="r1_l">None (100% User-Space HID)</td>
-            <td class="no" data-i18n="r1_v">Ring-0 Drivers (Blocked by Vanguard/Ricochet)</td>
-          </tr>
-          <tr>
-            <td data-i18n="r2_k">Frame Rate &amp; Memory</td>
-            <td class="col-lumina yes" data-i18n="r2_l">Locked 60 FPS • Zero-Alloc Loop</td>
-            <td data-i18n="r2_v">15–30 FPS • Heavy Background Services</td>
-          </tr>
-          <tr>
-            <td data-i18n="r3_k">Ads &amp; Paywalls</td>
-            <td class="col-lumina yes" data-i18n="r3_l">100% Free &amp; Open Source (MIT)</td>
-            <td class="no" data-i18n="r3_v">Ads, Accounts &amp; Pro Subscriptions</td>
-          </tr>
-          <tr>
-            <td data-i18n="r4_k">Custom Shaders &amp; WLED</td>
-            <td class="col-lumina yes" data-i18n="r4_l">Hot-Reload Lua + WLED Wi-Fi UDP</td>
-            <td class="no" data-i18n="r4_v">Locked Presets Only</td>
-          </tr>
+          <tr><td>ASRock Polychrome USB</td><td class="mono">Direct USB HID (VID 0x26CE)</td><td><span class="tag-ok">Verified</span></td></tr>
+          <tr><td>ASUS Aura USB</td><td class="mono">Direct USB HID (VID 0x0B05)</td><td><span class="tag-sup">Supported</span></td></tr>
+          <tr><td>Gigabyte RGB Fusion 2.0</td><td class="mono">IT8297 HID (VID 0x048D)</td><td><span class="tag-sup">Supported</span></td></tr>
+          <tr><td>MSI Mystic Light</td><td class="mono">MS-7xxx HID (VID 0x1462)</td><td><span class="tag-sup">Supported</span></td></tr>
+          <tr><td>WLED Wi-Fi Controllers</td><td class="mono">DRGB UDP Port 21324</td><td><span class="tag-ok">Real-Time</span></td></tr>
+          <tr><td>OpenRGB SDK</td><td class="mono">TCP 127.0.0.1:6742</td><td><span class="tag-sup">Fallback</span></td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <!-- HARDWARE -->
-  <section class="section reveal" id="hardware">
-    <div class="section-eyebrow" data-i18n="hw_eye">COMPATIBILITY</div>
-    <h2 class="section-title" data-i18n="hw_title">Supported Controllers &amp; Protocols</h2>
-    <p class="section-sub" data-i18n="hw_sub">Automatic USB HID discovery at startup with seamless Windows Sleep/Wake recovery.</p>
-    <div class="hw-grid">
-      <div class="hw-card">
-        <div><div class="hw-name">ASRock Polychrome USB</div><div class="hw-proto">Native Direct HID (VID 0x26CE)</div></div>
-        <span class="hw-status">Verified</span>
-      </div>
-      <div class="hw-card">
-        <div><div class="hw-name">ASUS Aura USB</div><div class="hw-proto">Direct HID (VID 0x0B05)</div></div>
-        <span class="hw-status beta">Supported</span>
-      </div>
-      <div class="hw-card">
-        <div><div class="hw-name">Gigabyte RGB Fusion 2.0</div><div class="hw-proto">IT8297 / Direct HID (VID 0x048D)</div></div>
-        <span class="hw-status beta">Supported</span>
-      </div>
-      <div class="hw-card">
-        <div><div class="hw-name">MSI Mystic Light</div><div class="hw-proto">MS-7xxx HID (VID 0x1462)</div></div>
-        <span class="hw-status beta">Supported</span>
-      </div>
-      <div class="hw-card">
-        <div><div class="hw-name">WLED Wi-Fi Strips</div><div class="hw-proto">DRGB UDP Port 21324</div></div>
-        <span class="hw-status">Real-Time</span>
-      </div>
-      <div class="hw-card">
-        <div><div class="hw-name">OpenRGB SDK</div><div class="hw-proto">TCP 127.0.0.1:6742 Fallback</div></div>
-        <span class="hw-status">Bridge</span>
-      </div>
+  <section class="section" id="download">
+    <div class="section-head">
+      <h2 data-i18n="dl_h2">Download &amp; Build</h2>
+      <p data-i18n="dl_sub">Self-contained Windows x64 binaries. Requires Edge WebView2 Runtime (pre-installed on Windows 11).</p>
     </div>
-  </section>
 
-  <!-- DOWNLOAD -->
-  <section class="section reveal" id="download">
-    <div class="section-eyebrow" data-i18n="dl_eye">GET STARTED</div>
-    <h2 class="section-title" data-i18n="dl_title">Ready in Seconds</h2>
-    <p class="section-sub" data-i18n="dl_sub">Self-contained Windows x64 build — no extra .NET runtime install required.</p>
-    <div class="dl-grid">
-      <div class="dl-card">
-        <h3 data-i18n="dl1_t">Windows 10 / 11 (x64)</h3>
-        <p style="font-size:14px;color:var(--muted)" data-i18n="dl1_d">Download the Portable ZIP from GitHub Releases, extract, and launch <code>LuminaCore.exe</code>.</p>
-        <div class="cta-row" style="justify-content:flex-start;margin:6px 0 0">
-          <a class="btn btn-primary" href="https://github.com/zentraxxdev/LuminaCore/releases/latest" data-i18n="dl1_btn">Download v2.1.0 Release</a>
+    <div class="dl-box">
+      <div>
+        <h3 style="font-size:16px;margin-bottom:8px" data-i18n="dl_bin_t">v2.1.0 Release</h3>
+        <p style="font-size:13.5px;color:var(--muted);margin-bottom:16px" data-i18n="dl_bin_d">Includes the one-click Windows installer (.exe) and a portable archive (.zip).</p>
+        <div class="cta-row" style="margin-bottom:0">
+          <a class="btn btn-primary" href="https://github.com/zentraxxdev/LuminaCore/releases/latest/download/LuminaCore-Setup-v2.1.0.exe">Setup-v2.1.0.exe</a>
+          <a class="btn btn-secondary" href="https://github.com/zentraxxdev/LuminaCore/releases/tag/v2.1.0" data-i18n="all_rel">All Release Files</a>
         </div>
       </div>
-      <div class="dl-card">
-        <h3 data-i18n="dl2_t">Build &amp; Package from Source</h3>
-        <p style="font-size:14px;color:var(--muted)" data-i18n="dl2_d">Clone the repository and run the one-click packaging script:</p>
-        <div class="code-box" id="cloneBox">
-          <button class="copy-btn" onclick="copyClone(this)">Copy</button>
-          git clone https://github.com/zentraxxdev/LuminaCore.git<br>cd LuminaCore<br>.\scripts\build-installer.ps1
+      <div>
+        <h3 style="font-size:16px;margin-bottom:8px" data-i18n="dl_src_t">Build from Source</h3>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+          git clone https://github.com/zentraxxdev/LuminaCore.git<br>
+          cd LuminaCore<br>
+          .\scripts\build-installer.ps1
         </div>
       </div>
     </div>
   </section>
 
   <footer>
-    <div>LuminaCore v2.1.0 — MIT License • Built with .NET 8 &amp; Edge WebView2</div>
+    <span>LuminaCore v2.1.0 — MIT License</span>
     <div style="display:flex;gap:20px">
-      <a href="https://github.com/zentraxxdev/LuminaCore" target="_blank">GitHub</a>
+      <a href="https://github.com/zentraxxdev/LuminaCore" target="_blank">Repository</a>
       <a href="https://github.com/zentraxxdev/LuminaCore/releases" target="_blank">Releases</a>
       <a href="https://github.com/zentraxxdev/LuminaCore/issues" target="_blank">Issues</a>
     </div>
@@ -638,272 +341,141 @@
 </main>
 
 <script>
-  const themes = {
-    cyber:  { name: 'Cyberpunk Neon',  a: '#00E5FF', b: '#8B5CF6', c: '#EC4899', glow: 'rgba(0,229,255,0.28)' },
-    synth:  { name: 'Synthwave 84',    a: '#F43F5E', b: '#A855F7', c: '#F59E0B', glow: 'rgba(244,63,94,0.28)' },
-    aurora: { name: 'Northern Aurora', a: '#10B981', b: '#06B6D4', c: '#6366F1', glow: 'rgba(16,185,129,0.28)' },
-    ember:  { name: 'Ember Forge',     a: '#F97316', b: '#EF4444', c: '#FACC15', glow: 'rgba(249,115,22,0.30)' },
-    frost:  { name: 'Arctic Frost',    a: '#38BDF8', b: '#E0F2FE', c: '#818CF8', glow: 'rgba(56,189,248,0.28)' }
+  const palettes = {
+    cyber:  ['#00E5FF', '#8B5CF6', '#EC4899'],
+    ember:  ['#F97316', '#EF4444', '#FACC15'],
+    aurora: ['#10B981', '#06B6D4', '#6366F1'],
+    frost:  ['#93C5FD', '#E0F2FE', '#60A5FA']
   };
-
-  let curTheme = themes.cyber;
-  let curEffect = 'wave';
+  let curPal = palettes.cyber;
+  let curEff = 'wave';
   let blackout = false;
-
-  function setDemoTheme(key, btn) {
-    curTheme = themes[key];
-    document.querySelectorAll('#themePills .t-pill').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    const r = document.documentElement.style;
-    r.setProperty('--accent', curTheme.a);
-    r.setProperty('--accent-2', curTheme.b);
-    r.setProperty('--accent-3', curTheme.c);
-    r.setProperty('--glow', curTheme.glow);
-    document.getElementById('activeThemeName').textContent = curTheme.name;
-  }
-
-  function setEffect(eff, btn) {
-    curEffect = eff;
-    document.querySelectorAll('#effectPills .t-pill').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    const names = { wave: 'SPECTRUM WAVE', audio: 'WASAPI AUDIO FFT', plasma: 'PLASMA CORE', pulse: 'BEAT STROBE' };
-    document.getElementById('modeTag').textContent = 'SHADER: ' + names[eff];
-    document.getElementById('activeEffectSub').textContent = names[eff] + ' • Zero-Alloc HID';
-  }
-
-  function toggleBlackout() {
-    blackout = !blackout;
-    const btn = document.getElementById('blackoutBtn');
-    btn.textContent = blackout ? 'Blackout' : 'Lights On';
-    btn.classList.toggle('off', blackout);
-  }
-
-  function copyClone(btn) {
-    navigator.clipboard.writeText('git clone https://github.com/zentraxxdev/LuminaCore.git\ncd LuminaCore\n.\\scripts\\build-installer.ps1');
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy', 1500);
-  }
-
-  // Ambient Floating Particles Background
-  const pCanvas = document.getElementById('particleBg');
-  const pCtx = pCanvas.getContext('2d');
-  let particles = [];
-  function resizeParticles() {
-    pCanvas.width = window.innerWidth;
-    pCanvas.height = window.innerHeight;
-  }
-  window.addEventListener('resize', resizeParticles);
-  resizeParticles();
-  for (let i = 0; i < 42; i++) {
-    particles.push({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      vx: (Math.random() - 0.5) * 0.35,
-      vy: -0.15 - Math.random() * 0.45,
-      r: 1 + Math.random() * 1.8
-    });
-  }
-
-  // Main 60 FPS PC Rig + ARGB Fans + GPU + RAM + Desk Strip Simulator
-  const canvas = document.getElementById('ledCanvas');
-  const ctx = canvas.getContext('2d');
   let t = 0;
 
-  function hexToRgb(hex) {
-    const n = parseInt(hex.slice(1), 16);
-    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  function setTheme(k, btn) {
+    curPal = palettes[k];
+    btn.parentElement.querySelectorAll('.chip').forEach((c, idx) => { if (idx < 4) c.classList.remove('active'); });
+    btn.classList.add('active');
   }
-  function lerpColor(c1, c2, f) {
-    return [
-      Math.round(c1[0] + (c2[0] - c1[0]) * f),
-      Math.round(c1[1] + (c2[1] - c1[1]) * f),
-      Math.round(c1[2] + (c2[2] - c1[2]) * f)
-    ];
+  function setEffect(e, btn) {
+    curEff = e;
+    const all = Array.from(btn.parentElement.querySelectorAll('.chip'));
+    all.slice(4).forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
   }
-  function sampleColor(phase, bright) {
-    if (blackout) return 'rgb(18, 22, 32)';
-    const c1 = hexToRgb(curTheme.a), c2 = hexToRgb(curTheme.b), c3 = hexToRgb(curTheme.c);
+  function toggleBlackout() {
+    blackout = !blackout;
+    const b = document.getElementById('blackoutBtn');
+    b.classList.toggle('active', blackout);
+    b.textContent = blackout ? 'Blackout: ON' : 'Blackout';
+  }
+  function copyCmd(btn) {
+    navigator.clipboard.writeText('git clone https://github.com/zentraxxdev/LuminaCore.git\ncd LuminaCore\n.\\scripts\\build-installer.ps1');
+    btn.textContent = 'Copied';
+    setTimeout(() => btn.textContent = 'Copy', 1400);
+  }
+
+  const canvas = document.getElementById('ledCanvas');
+  const ctx = canvas.getContext('2d');
+  function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+  function mix(a, b, f) { return [Math.round(a[0]+(b[0]-a[0])*f), Math.round(a[1]+(b[1]-a[1])*f), Math.round(a[2]+(b[2]-a[2])*f)]; }
+  function sample(phase, bright) {
+    if (blackout) return 'rgb(28,28,32)';
+    const c1 = hexRgb(curPal[0]), c2 = hexRgb(curPal[1]), c3 = hexRgb(curPal[2]);
     const p = ((phase % 1) + 1) % 1;
-    let rgb = p < 0.333 ? lerpColor(c1, c2, p * 3) : p < 0.666 ? lerpColor(c2, c3, (p - 0.333) * 3) : lerpColor(c3, c1, (p - 0.666) * 3);
+    const rgb = p < 0.333 ? mix(c1, c2, p*3) : p < 0.666 ? mix(c2, c3, (p-0.333)*3) : mix(c3, c1, (p-0.666)*3);
     return `rgb(${Math.round(rgb[0]*bright)},${Math.round(rgb[1]*bright)},${Math.round(rgb[2]*bright)})`;
   }
-
-  function getEffectPhase(idx, total) {
-    if (curEffect === 'wave') return idx / total + t * 0.5;
-    if (curEffect === 'plasma') return Math.sin(idx * 0.45 + t * 2.5) * 0.5 + 0.5;
-    if (curEffect === 'pulse') return (Math.sin(t * 5.2) * 0.5 + 0.5) * 0.6 + idx / (total * 3);
-    // audio
-    const beat = Math.pow(Math.sin(t * 6.5) * 0.5 + 0.5, 2);
-    return (idx / total) * 0.7 + beat * 0.45;
+  function effPhase(i, n) {
+    if (curEff === 'wave') return i / n + t * 0.45;
+    if (curEff === 'plasma') return Math.sin(i * 0.4 + t * 2.4) * 0.5 + 0.5;
+    const beat = Math.pow(Math.sin(t * 6) * 0.5 + 0.5, 2);
+    return (i / n) * 0.7 + beat * 0.4;
   }
 
-  function drawFrame() {
-    const speed = document.getElementById('speedSlider').value / 100;
-    const bright = document.getElementById('brightSlider').value / 100;
-    t += 0.014 * speed;
-
-    // Update floating particles
-    pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
-    pCtx.fillStyle = curTheme.a;
-    particles.forEach(p => {
-      p.x += p.vx; p.y += p.vy;
-      if (p.y < -10) { p.y = pCanvas.height + 10; p.x = Math.random() * pCanvas.width; }
-      if (p.x < 0) p.x = pCanvas.width;
-      if (p.x > pCanvas.width) p.x = 0;
-      pCtx.globalAlpha = blackout ? 0.05 : 0.32;
-      pCtx.beginPath(); pCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2); pCtx.fill();
-    });
-
+  function frame() {
+    const spd = document.getElementById('speedSlider').value / 100;
+    const br = document.getElementById('brightSlider').value / 100;
+    t += 0.013 * spd;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 1. Draw 3x ARGB Case Fans with rotating blades
-    [80, 185, 290].forEach((cx, fi) => {
-      const cy = 68, rad = 38, leds = 16;
-      ctx.beginPath();
-      ctx.arc(cx, cy, rad + 6, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Spinning fan blades
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(t * 2.2 + fi);
-      ctx.strokeStyle = 'rgba(255,255,255,0.09)';
-      ctx.lineWidth = 3;
-      for (let b = 0; b < 5; b++) {
-        ctx.rotate((Math.PI * 2) / 5);
-        ctx.beginPath(); ctx.moveTo(6, 0); ctx.quadraticCurveTo(18, 10, rad - 8, 4); ctx.stroke();
-      }
-      ctx.restore();
-
+    // 3x Fans
+    [95, 215, 335].forEach((cx, fi) => {
+      const cy = 62, rad = 36, leds = 16;
+      ctx.beginPath(); ctx.arc(cx, cy, rad + 6, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1.5; ctx.stroke();
       for (let i = 0; i < leds; i++) {
-        const ang = (i / leds) * Math.PI * 2 + t * 1.1;
-        const x = cx + Math.cos(ang) * rad;
-        const y = cy + Math.sin(ang) * rad;
-        const col = sampleColor(getEffectPhase(i + fi * 3, leds), bright);
-        ctx.beginPath(); ctx.arc(x, y, 4.1, 0, Math.PI * 2);
+        const a = (i / leds) * Math.PI * 2 + t;
+        const col = sample(effPhase(i + fi * 3, leds), br);
+        ctx.beginPath(); ctx.arc(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad, 3.8, 0, Math.PI * 2);
         ctx.fillStyle = col;
         ctx.shadowColor = blackout ? 'transparent' : col;
-        ctx.shadowBlur = blackout ? 0 : 12;
+        ctx.shadowBlur = blackout ? 0 : 10;
         ctx.fill();
       }
       ctx.shadowBlur = 0;
     });
 
-    // 2. Draw 4x ARGB RAM DIMMs + GPU Backplate Bar
+    // RAM + GPU
     for (let r = 0; r < 4; r++) {
-      const rx = 365 + r * 14, ry = 26, rh = 44;
-      const col = sampleColor(getEffectPhase(r, 4), bright);
-      ctx.fillStyle = col;
-      ctx.shadowColor = blackout ? 'transparent' : col;
-      ctx.shadowBlur = blackout ? 0 : 10;
-      ctx.fillRect(rx, ry, 7, rh);
+      const col = sample(effPhase(r, 4), br);
+      ctx.fillStyle = col; ctx.fillRect(435 + r * 14, 24, 7, 42);
     }
-    ctx.shadowBlur = 0;
-
-    // GPU RGB Bar
     for (let g = 0; g < 12; g++) {
-      const gx = 365 + g * 12;
-      const col = sampleColor(getEffectPhase(g, 12), bright);
-      ctx.fillStyle = col;
-      ctx.shadowColor = blackout ? 'transparent' : col;
-      ctx.shadowBlur = blackout ? 0 : 10;
-      ctx.fillRect(gx, 92, 9, 8);
+      const col = sample(effPhase(g, 12), br);
+      ctx.fillStyle = col; ctx.fillRect(435 + g * 13, 86, 9, 7);
     }
-    ctx.shadowBlur = 0;
 
-    // 3. Draw 16-Band Audio EQ / Desk Strip on Right
-    const eqX = 535, eqW = 205;
-    for (let i = 0; i < 16; i++) {
-      const h = curEffect === 'audio' || curEffect === 'pulse'
-        ? 14 + Math.abs(Math.sin(t * 7 + i * 0.6)) * 68
-        : 28 + Math.sin(t * 3 + i * 0.4) * 18;
-      const col = sampleColor(getEffectPhase(i, 16), bright);
-      ctx.fillStyle = col;
-      ctx.shadowColor = blackout ? 'transparent' : col;
-      ctx.shadowBlur = blackout ? 0 : 10;
-      ctx.fillRect(eqX + i * 13, 108 - h, 8, h);
+    // Audio EQ Bars
+    for (let i = 0; i < 18; i++) {
+      const h = curEff === 'audio' ? 14 + Math.abs(Math.sin(t * 6.5 + i * 0.55)) * 66 : 24 + Math.sin(t * 2.8 + i * 0.4) * 16;
+      ctx.fillStyle = sample(effPhase(i, 18), br);
+      ctx.fillRect(635 + i * 16, 100 - h, 10, h);
     }
-    ctx.shadowBlur = 0;
 
-    // 4. Bottom Full-Width Desk Strip (30 LEDs)
+    // Desk Strip (30 LEDs)
     for (let i = 0; i < 30; i++) {
-      const sx = 34 + (i / 29) * 692;
-      const col = sampleColor(getEffectPhase(i, 30), bright);
-      ctx.beginPath(); ctx.arc(sx, 160, 4.8, 0, Math.PI * 2);
+      const col = sample(effPhase(i, 30), br);
+      ctx.beginPath(); ctx.arc(46 + (i / 29) * 868, 148, 4.5, 0, Math.PI * 2);
       ctx.fillStyle = col;
       ctx.shadowColor = blackout ? 'transparent' : col;
-      ctx.shadowBlur = blackout ? 0 : 14;
+      ctx.shadowBlur = blackout ? 0 : 10;
       ctx.fill();
     }
     ctx.shadowBlur = 0;
-
-    requestAnimationFrame(drawFrame);
+    requestAnimationFrame(frame);
   }
-  requestAnimationFrame(drawFrame);
+  requestAnimationFrame(frame);
 
-  // Cursor Spotlight on Bento Cards
-  document.querySelectorAll('.bento-card').forEach(card => {
-    card.addEventListener('mousemove', e => {
-      const rect = card.getBoundingClientRect();
-      card.style.setProperty('--mx', `${e.clientX - rect.left}px`);
-      card.style.setProperty('--my', `${e.clientY - rect.top}px`);
-    });
-  });
-
-  // Scroll Reveal Observer
-  const obs = new IntersectionObserver(entries => {
-    entries.forEach(en => { if (en.isIntersecting) en.target.classList.add('visible'); });
-  }, { threshold: 0.12 });
-  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
-
-  // Bilingual EN / TR Toggle
-  const i18n = {
-    tr: {
-      nav_demo: 'Canlı Stüdyo', nav_features: 'Özellikler', nav_compare: 'Neden LuminaCore',
-      nav_hw: 'Donanım', nav_dl: 'İndir', nav_get: 'v2.1.0 İndir',
-      hero_badge: 'v2.1.0 Yayında • 60 FPS User-Space USB HID • Anti-Cheat Güvenli',
-      hero_t1: 'Yeni Nesil PC ARGB Kontrolü.',
-      hero_t2: 'Sıfır Bloat. Sıfır Kernel Sürücüsü.',
-      hero_sub: 'LuminaCore; anakart ARGB portlarını, WLED Wi-Fi şeritleri, 60 FPS DXGI Ekran Ambilight ve WASAPI Ses Görselleştiriciyi tamamen user-space üzerinden milisaniye altı USB HID hızıyla yönetir.',
-      cta_dl: 'Windows x64 İndir', cta_gh: 'GitHub\'da İncele',
-      eff_wave: 'Spektrum Dalga', eff_audio: 'Ses FFT', eff_plasma: 'Plazma Çekirdek', eff_pulse: 'Beat Strobe',
-      speed: 'Hız', bright: 'Parlaklık',
-      stat1: 'Kilitli Donanım Döngüsü', stat2: 'USB HID Paket Gecikmesi',
-      stat3: 'Anti-Cheat %100 Güvenli', stat4: 'Birleşik UI + RGB Tema',
-      feat_eye: 'MİMARİ', feat_title: 'Performans ve Tam Kontrol İçin Tasarlandı',
-      feat_sub: 'Arka planda çalışan ağır servisler, reklamlar veya kernel riski yok.',
-      f1_t: 'Doğrudan USB HID Motoru', f1_d: 'Anakart RGB kontrolcülerine standart Windows HID üzerinden, GC yükü oluşturmayan ön-tahsisli bellek tamponlarıyla 60 FPS veri basar.',
-      f2_t: '24 Birleşik Tema', f2_d: 'Tek tıkla hem cam efektli masaüstü arayüzünü hem tüm RGB kanallarını değiştirin; paylaşım kodlarıyla temanızı aktarın.',
-      f3_t: 'Anında Yüklenen Lua Shader', f3_d: 'Plugins/ klasörüne .lua dosyası bırakın; uygulamayı yeniden başlatmadan kütüphanede canlı olarak görünsün.',
-      f4_t: 'Pro HID Kalibrasyonu', f4_d: 'Kanal başına RGB/GRB/BRG renk sırasını düzeltin ve yeşil LED adım kaydırıcısıyla fan/şerit LED sayısını kalibre edin.',
-      f5_t: 'DXGI Ambilight & Ses FFT', f5_d: '60 FPS GPU ekran senkronizasyonu ve 32 bantlı WASAPI ses spektrumu ile vuruş algılamalı ışıklandırma.',
-      f6_t: 'Oyun Profilleri & Web Kumanda', f6_d: 'Oyun açıldığında profili otomatik değiştirin, telefondan localhost:5050 ile yönetin veya Ctrl+Alt+L ile anında karartın.',
-      cmp_eye: 'KARŞILAŞTIRMA', cmp_title: 'Neden Üretici Yazılımları Yerine LuminaCore?',
-      cmp_sub: 'Rekabetçi oyunlarla çakışan ağır üretici yazılımlarının yerini alması için geliştirildi.',
-      cmp_c1: 'Özellik', cmp_c3: 'Üretici RGB Yazılımları',
-      r1_k: 'Kernel Sürücüsü / Anti-Cheat Riski', r1_l: 'Yok (%100 User-Space HID)', r1_v: 'Ring-0 Sürücüler (Vanguard/Ricochet engeli)',
-      r2_k: 'Kare Hızı & Bellek', r2_l: 'Kilitli 60 FPS • Sıfır Tahsis', r2_v: '15–30 FPS • Ağır Arka Plan Servisleri',
-      r3_k: 'Reklam & Abonelik', r3_l: '%100 Ücretsiz & Açık Kaynak (MIT)', r3_v: 'Reklamlar, Hesap Zorunluluğu & Pro Paket',
-      r4_k: 'Özel Shader & WLED', r4_l: 'Anlık Lua + WLED Wi-Fi UDP', r4_v: 'Sadece Kısıtlı Hazır Efektler',
-      hw_eye: 'UYUMLULUK', hw_title: 'Desteklenen Kontrolcüler & Protokoller',
-      hw_sub: 'Açılışta otomatik USB HID taraması ve Windows Uyku/Uyanma sonrası kesintisiz kurtarma.',
-      dl_eye: 'BAŞLANGIÇ', dl_title: 'Saniyeler İçinde Hazır',
-      dl_sub: 'Bağımsız Windows x64 derlemesi — ek .NET kurulumu gerektirmez.',
-      dl1_t: 'Windows 10 / 11 (x64)', dl1_d: 'GitHub Releases üzerinden Portable ZIP dosyasını indirin, çıkarın ve LuminaCore.exe uygulamasını başlatın.',
-      dl1_btn: 'v2.1.0 Sürümünü İndir',
-      dl2_t: 'Kaynaktan Derle & Paketle', dl2_d: 'Depoyu klonlayın ve tek tıkla paketleme betiğini çalıştırın:'
-    }
+  const tr = {
+    nav_feat: 'Özellikler', nav_hw: 'Donanım', nav_dl: 'İndir',
+    ver_line: 'v2.1.0 • Windows 10/11 x64 • MIT Açık Kaynak',
+    hero_h1: '60 FPS user-space ARGB ışıklandırma kontrolü.',
+    hero_sub: 'Anakart USB HID portlarını, WLED Wi-Fi şeritleri, DXGI Ekran Ambilight ve WASAPI ses görselleştiriciyi kernel sürücüsü, reklam ve arka plan yükü olmadan yönetir.',
+    btn_setup: 'Kurulumu İndir (.exe)', btn_zip: 'Taşınabilir ZIP',
+    eff_wave: 'Dalga', eff_audio: 'Ses EQ', eff_plasma: 'Plazma',
+    lbl_speed: 'Hız', lbl_bright: 'Parlaklık',
+    feat_h2: 'Teknik Özellikler', feat_sub: 'Öngörülebilir kare hızı, düşük arka plan belleği ve doğrudan donanım erişimi için tasarlandı.',
+    f1_t: 'Doğrudan USB HID (Ring-0 Sürücüsüz)', f1_d: 'HidSharp üzerinden ön-tahsisli bellek tamponlarıyla 60 FPS user-space döngüsü. Vanguard ve Ricochet ile uyumludur.',
+    f2_t: 'Tepside Düşük RAM Uyku Modu', f2_d: 'Sistem tepsisine küçültüldüğünde WebView2 arayüzü TrySuspendAsync() ile uykuya alınır, C# donanım döngüsü çalışmaya devam eder.',
+    f3_t: 'Kanal Bazlı HID Kalibrasyonu', f3_d: 'Her port için RGB / GRB / BRG / RBG renk sırasını düzeltin ve yeşil LED adım kaydırıcısıyla LED sayısını kalibre edin.',
+    f4_t: 'Anında Yüklenen Lua Eklentileri', f4_d: 'Plugins/ klasörüne .lua dosyası bırakarak uygulamayı yeniden başlatmadan yeni shader efektleri ekleyin.',
+    f5_t: 'DXGI Ambilight & WASAPI Ses FFT', f5_d: 'GPU Desktop Duplication ile ekran renklerini yakalar ve 32 bantlı ses spektrumuyla senkronize çalışır.',
+    f6_t: 'Oyun Profilleri & Yerel Web Kumanda', f6_d: '.exe süreçlerine profil bağlayın, localhost:5050 üzerinden telefondan yönetin veya Ctrl+Alt+L ile anında kapatın.',
+    hw_h2: 'Desteklenen Donanımlar', hw_sub: 'Açılışta otomatik kontrolcü taraması ve Windows uyku/uyanma sonrası otomatik kurtarma.',
+    th_dev: 'Kontrolcü / Protokol', th_proto: 'Bağlantı', th_stat: 'Durum',
+    dl_h2: 'İndir & Derle', dl_sub: 'Bağımsız Windows x64 derlemesi. Edge WebView2 gerektirir (Windows 11’de hazır gelir).',
+    dl_bin_t: 'v2.1.0 Sürümü', dl_bin_d: 'Tek tıkla Windows kurulumu (.exe) ve taşınabilir arşiv (.zip) içerir.',
+    all_rel: 'Tüm Dosyalar', dl_src_t: 'Kaynaktan Derle'
   };
   let lang = 'en';
-  const enCache = {};
-  document.querySelectorAll('[data-i18n]').forEach(el => enCache[el.dataset.i18n] = el.textContent);
+  const en = {};
+  document.querySelectorAll('[data-i18n]').forEach(el => en[el.dataset.i18n] = el.textContent);
   function toggleLang() {
     lang = lang === 'en' ? 'tr' : 'en';
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const k = el.dataset.i18n;
-      el.textContent = lang === 'tr' ? (i18n.tr[k] || enCache[k]) : enCache[k];
+      el.textContent = lang === 'tr' ? (tr[k] || en[k]) : en[k];
     });
   }
 </script>

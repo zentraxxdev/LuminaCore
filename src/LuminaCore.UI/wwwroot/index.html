@@ -477,21 +477,18 @@
   }
   @keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
   .welcome-card {
-    width: 520px; max-width: 92vw;
-    background: linear-gradient(160deg, rgba(16, 21, 34, 0.96), rgba(10, 12, 20, 0.98));
-    border: 1px solid rgba(0, 229, 255, 0.28); border-radius: 18px; padding: 26px;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.75), 0 0 42px rgba(0, 229, 255, 0.14);
-    display: flex; flex-direction: column; gap: 16px;
-    animation: cardPop 0.32s cubic-bezier(.16,1,.3,1);
+    width: 490px; max-width: 92vw;
+    background: #111216;
+    border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; padding: 24px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.72);
+    display: flex; flex-direction: column; gap: 15px;
+    animation: cardPop 0.25s cubic-bezier(.16,1,.3,1);
   }
-  @keyframes cardPop { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  @keyframes cardPop { from { opacity: 0; transform: scale(0.97) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
   .welcome-ring {
-    width: 44px; height: 44px; border-radius: 50%; border: 3px solid transparent;
-    background: linear-gradient(#0b0e17, #0b0e17) padding-box, linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) border-box;
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.45);
-    animation: spinRing 5s linear infinite;
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 3px solid var(--accent-primary);
   }
-  @keyframes spinRing { to { transform: rotate(360deg); } }
   .welcome-steps-dots { display: flex; gap: 6px; align-items: center; }
   .w-dot { width: 8px; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.16); transition: all 0.25s; }
   .w-dot.active { width: 22px; background: var(--accent-primary); }
@@ -1797,7 +1794,7 @@ post('ready');
       document.getElementById(`w-step-${i}`).classList.toggle('hidden', i !== step);
       document.getElementById(`wd-${i}`).classList.toggle('active', i === step);
     });
-    nextBtn.textContent = step === 2 ? 'Start Tour ✨' : 'Next →';
+    nextBtn.textContent = step === 2 ? 'Start Tour' : 'Next';
   }
 
   function openWelcome() {
@@ -1847,7 +1844,7 @@ post('ready');
     document.getElementById('tb-title').textContent = s.title;
     document.getElementById('tb-desc').textContent = s.desc;
     document.getElementById('tb-count').textContent = `${tIdx + 1} / ${tourSteps.length}`;
-    document.getElementById('tb-next').textContent = tIdx === tourSteps.length - 1 ? 'Finish ✓' : 'Next →';
+    document.getElementById('tb-next').textContent = tIdx === tourSteps.length - 1 ? 'Finish' : 'Next';
   }
 
   function startTour() { tIdx = 0; showTourStep(); }
