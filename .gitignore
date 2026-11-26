@@ -1,0 +1,15 @@
+# .NET build & IDE artifacts
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.cache
+TestResults/
+
+# Distribution binaries (uploaded via GitHub Releases instead of git tree)
+dist/
+
+# Logs & temporary files
+*.log
+*.tmp

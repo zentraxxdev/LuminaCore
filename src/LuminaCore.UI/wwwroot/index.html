@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LuminaCore</title>
+<style>
+  :root {
+    --bg-primary: #08090D;
+    --bg-rail: rgba(11, 13, 19, 0.92);
+    --bg-card: rgba(18, 22, 33, 0.76);
+    --bg-card-hover: rgba(26, 32, 48, 0.88);
+    --bg-elevated: rgba(24, 29, 44, 0.92);
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-top: rgba(255, 255, 255, 0.14);
+    --accent-primary: #00E5FF;
+    --accent-secondary: #8B5CF6;
+    --glow-color: rgba(0, 229, 255, 0.22);
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --danger: #EF4444;
+    --success: #10B981;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: "Segoe UI Variable", "Segoe UI", -apple-system, sans-serif;
+    font-size: 13px;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  /* Subtle Theme Ambient Glow */
+  #ambient-glow {
+    position: fixed;
+    top: -160px;
+    left: 26%;
+    width: 720px;
+    height: 360px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-primary) 0%, var(--accent-secondary) 46%, transparent 72%);
+    opacity: 0.12;
+    filter: blur(95px);
+    pointer-events: none;
+    transition: background 0.35s ease, opacity 0.3s ease;
+    z-index: 0;
+  }
+  body.blackout #ambient-glow { opacity: 0.02; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.2); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.4); }
+
+  /* App Shell: Top Titlebar (42px) + Main Content + Persistent Bottom Player (64px) */
+  .shell {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-rows: 42px 1fr 64px;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* Slim Top Window Bar */
+  .titlebar {
+    display: grid;
+    grid-template-columns: 210px 1fr auto;
+    align-items: center;
+    background: var(--bg-rail);
+    border-bottom: 1px solid var(--border-subtle);
+    padding-right: 8px;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding-left: 16px;
+  }
+  .brand-ring {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2.5px solid transparent;
+    background: linear-gradient(var(--bg-primary), var(--bg-primary)) padding-box,
+                linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)) border-box;
+    box-shadow: 0 0 10px var(--glow-color);
+  }
+  .brand-text { font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; }
+  .brand-text span { color: var(--accent-primary); font-weight: 700; }
+
+  .top-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .chip strong { font-weight: 700; }
+
+  .win-btns { display: flex; gap: 2px; }
+  .win-btn {
+    width: 34px; height: 28px; border: none; border-radius: 6px;
+    background: transparent; color: var(--text-secondary); font-size: 13px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.14s, color 0.14s;
+  }
+  .win-btn:hover { background: rgba(255,255,255,0.08); color: white; }
+  .win-btn.close:hover { background: #E11D48; color: white; }
+
+  /* Middle Grid: 210px Slim Rail + Active View */
+  .middle {
+    display: grid;
+    grid-template-columns: 210px 1fr;
+    overflow: hidden;
+  }
+
+  /* Slim Left Navigation Rail (210px) */
+  .rail {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: var(--bg-rail);
+    border-right: 1px solid var(--border-subtle);
+    padding: 12px 10px;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+  }
+  .rail-group { display: flex; flex-direction: column; gap: 4px; }
+  .rail-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.16s ease;
+  }
+  .rail-item:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+  .rail-item.active {
+    background: color-mix(in srgb, var(--accent-primary) 11%, transparent);
+    border-color: color-mix(in srgb, var(--accent-primary) 30%, transparent);
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  .rail-item.active::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 2px;
+    background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+  }
+  .rail-item svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.85; }
+  .rail-item.active svg { color: var(--accent-primary); opacity: 1; }
+
+  .rail-bottom {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Workspace Pages */
+  .stage {
+    position: relative;
+    overflow: hidden;
+  }
+  .page {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: none;
+    transition: opacity 0.16s ease, transform 0.16s ease;
+    overflow: hidden;
+  }
+  .page.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .page-scroll {
+    height: 100%;
+    overflow-y: auto;
+    padding: 18px 22px;
+  }
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+  .page-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+
+  /* Common UI Elements */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-top-color: var(--border-top);
+    border-radius: 13px;
+    padding: 15px;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 7px 13px; border-radius: 8px;
+    border: 1px solid var(--border-subtle); border-top-color: var(--border-top);
+    background: var(--bg-elevated); color: var(--text-primary);
+    font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+  .btn:hover { background: var(--bg-card-hover); border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
+  .btn-accent {
+    background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+    border-color: color-mix(in srgb, var(--accent-primary) 55%, transparent);
+    color: var(--accent-primary); font-weight: 600;
+  }
+  .btn-accent:hover {
+    background: color-mix(in srgb, var(--accent-primary) 24%, transparent);
+    box-shadow: 0 0 18px var(--glow-color);
+  }
+  .btn-danger { background: rgba(239,68,68,0.16); border-color: rgba(239,68,68,0.55); color: #FCA5A5; }
+  .btn-sm { padding: 4px 10px; font-size: 11px; border-radius: 7px; }
+  .btn-icon { width: 32px; height: 32px; padding: 0; border-radius: 50%; }
+
+  .input, .select {
+    background: rgba(9, 11, 17, 0.9);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    color: var(--text-primary);
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    user-select: text;
+  }
+  .input:focus, .select:focus { border-color: var(--accent-primary); }
+  .select option { background: #0E111A; color: #F8FAFC; }
+
+  .switch { position: relative; display: inline-block; width: 34px; height: 18px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch-track {
+    position: absolute; inset: 0; background: #1D2335; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.18s;
+  }
+  .switch-track::after {
+    content: ""; position: absolute; width: 12px; height: 12px; left: 2px; top: 2px;
+    border-radius: 50%; background: #64748B; transition: all 0.18s;
+  }
+  .switch input:checked + .switch-track {
+    background: color-mix(in srgb, var(--accent-primary) 24%, transparent);
+    border-color: var(--accent-primary);
+  }
+  .switch input:checked + .switch-track::after {
+    transform: translateX(16px); background: var(--accent-primary);
+    box-shadow: 0 0 8px var(--glow-color);
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none; width: 100%; height: 4px; border-radius: 999px;
+    background: #1D2335; outline: none; margin: 6px 0; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+    background: #F8FAFC; border: 2px solid var(--accent-primary);
+    box-shadow: 0 0 8px var(--glow-color);
+  }
+
+  /* Filter Pills & Search (Library) */
+  .filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .filter-pill {
+    padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border-subtle);
+    background: var(--bg-card); color: var(--text-secondary);
+    font-size: 11.5px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+  }
+  .filter-pill:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
+  .filter-pill.active {
+    background: color-mix(in srgb, var(--accent-primary) 16%, transparent);
+    border-color: var(--accent-primary); color: var(--accent-primary); font-weight: 600;
+  }
+
+  /* 3-Column Visual Grids (Library & Themes) */
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; align-content: start; }
+  .visual-card {
+    background: var(--bg-card); border: 1px solid var(--border-subtle); border-top-color: var(--border-top);
+    border-radius: 13px; overflow: hidden; cursor: pointer; text-align: left;
+    font-family: inherit; color: var(--text-primary);
+    transition: transform 0.18s cubic-bezier(0.2,0.8,0.2,1), border-color 0.18s, box-shadow 0.18s;
+  }
+  .visual-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
+  .visual-card.selected {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-primary) 40%, transparent), 0 10px 26px var(--glow-color);
+  }
+  .card-banner { position: relative; height: 64px; width: 100%; }
+  .card-badge {
+    position: absolute; top: 8px; right: 8px; padding: 2px 7px; border-radius: 5px;
+    background: rgba(8,10,15,0.76); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.16); font-size: 9px; font-weight: 700; letter-spacing: 0.05em;
+  }
+  .card-badge.plugin { color: #34D399; border-color: rgba(52,211,153,0.45); }
+  .card-body { padding: 11px 13px 12px; }
+  .card-title { font-size: 13.5px; font-weight: 600; }
+  .card-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* LIGHTING STUDIO SPLIT */
+  .lighting-split { display: grid; grid-template-columns: 1fr 336px; height: 100%; }
+  .lighting-main { display: flex; flex-direction: column; gap: 14px; padding: 18px 20px; overflow-y: auto; }
+  .live-banner {
+    position: relative; height: 68px; border-radius: 13px; overflow: hidden;
+    border: 1px solid var(--border-subtle); border-top-color: var(--border-top); flex-shrink: 0;
+  }
+  .live-banner canvas { width: 100%; height: 100%; display: block; }
+  .live-banner-overlay {
+    position: absolute; inset: 0; padding: 0 18px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(8,9,13,0.45));
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .inspector {
+    display: flex; flex-direction: column;
+    background: var(--bg-rail); border-left: 1px solid var(--border-subtle);
+    padding: 16px; overflow: hidden;
+  }
+  .inspector-scroll { flex: 1; overflow-y: auto; padding-right: 4px; }
+  .field-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0 3px; font-size: 11.5px; color: var(--text-secondary); }
+  .field-val { color: var(--accent-primary); font-weight: 600; }
+
+  /* 2D HSV Picker */
+  .hsv-box { display: grid; grid-template-columns: 1fr 18px; gap: 10px; height: 160px; margin: 6px 0 10px; }
+  .hsv-pad, .hue-bar { position: relative; border-radius: 9px; overflow: hidden; border: 1px solid var(--border-subtle); cursor: crosshair; }
+  .hsv-pad canvas, .hue-bar canvas { width: 100%; height: 100%; display: block; }
+  #sv-thumb { position: absolute; width: 13px; height: 13px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 1.5px rgba(0,0,0,0.7); transform: translate(-50%,-50%); pointer-events: none; }
+  #hue-thumb { position: absolute; left: 0; right: 0; height: 6px; border-radius: 3px; border: 1.5px solid white; transform: translateY(-50%); pointer-events: none; }
+
+  .swatches { display: flex; flex-wrap: wrap; gap: 7px; margin: 8px 0 10px; }
+  .swatch { width: 23px; height: 23px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.2); cursor: pointer; transition: transform 0.13s; }
+  .swatch:hover { transform: scale(1.15); border-color: white; }
+
+  .segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: rgba(10,12,18,0.85); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 2px; margin: 4px 0 10px; }
+  .seg-btn { border: none; background: transparent; color: var(--text-secondary); padding: 5px; border-radius: 6px; font-size: 11.5px; cursor: pointer; font-family: inherit; }
+  .seg-btn.active { background: color-mix(in srgb, var(--accent-primary) 16%, transparent); color: var(--accent-primary); font-weight: 600; }
+
+  /* DEVICES TAB + SLIDE-OVER CALIBRATION DRAWER */
+  .devices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; max-width: 960px; }
+  .device-hw-card {
+    display: flex; flex-direction: column; gap: 12px; cursor: pointer;
+    transition: border-color 0.16s, transform 0.16s;
+  }
+  .device-hw-card:hover { border-color: var(--accent-primary); transform: translateY(-2px); }
+
+  .drawer-backdrop {
+    position: fixed; inset: 0; background: rgba(4, 6, 10, 0.55); backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 50;
+  }
+  .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 42px; right: 0; bottom: 64px; width: 410px;
+    background: rgba(13, 16, 25, 0.96); backdrop-filter: blur(24px);
+    border-left: 1px solid var(--border-subtle); padding: 18px;
+    display: flex; flex-direction: column; gap: 14px; overflow-y: auto;
+    transform: translateX(100%); transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 51;
+  }
+  .drawer.open { transform: translateX(0); }
+
+  /* TWO-PANE SETTINGS */
+  .settings-split { display: grid; grid-template-columns: 200px 1fr; height: 100%; }
+  .settings-nav { border-right: 1px solid var(--border-subtle); padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; background: rgba(10,12,18,0.45); }
+  .settings-content { padding: 18px 24px; overflow-y: auto; max-width: 760px; }
+  .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-subtle); }
+  .setting-row:last-child { border-bottom: none; }
+
+  /* COOLING */
+  .telemetry-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .metric-big { font-size: 25px; font-weight: 700; margin: 4px 0 6px; }
+  .mini-bar { height: 4px; border-radius: 999px; background: #1B2133; overflow: hidden; }
+  .mini-bar-fill { height: 100%; border-radius: 999px; transition: width 0.25s; }
+  .cooling-split { display: grid; grid-template-columns: 1.45fr 1fr; gap: 14px; }
+
+  /* PERSISTENT BOTTOM PLAYER BAR (64px) */
+  .player-bar {
+    display: grid;
+    grid-template-columns: 240px 1fr auto;
+    align-items: center;
+    padding: 0 16px;
+    background: rgba(11, 14, 21, 0.82);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border-subtle);
+    gap: 12px;
+    z-index: 20;
+  }
+  .player-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  #player-thumb { width: 42px; height: 42px; border-radius: 9px; border: 1px solid var(--border-top); flex-shrink: 0; }
+  .player-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-sub { font-size: 11px; color: var(--text-muted); }
+
+  .player-center { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .play-main {
+    width: 38px; height: 38px; border-radius: 50%; border: none;
+    background: var(--accent-primary); color: #07090E; font-size: 15px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 16px var(--glow-color); transition: transform 0.14s;
+  }
+  .play-main:hover { transform: scale(1.07); }
+
+  .player-right { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #F59E0B; }
+  .status-dot.connected { background: var(--success); box-shadow: 0 0 8px rgba(16,185,129,0.7); }
+
+  /* Modals */
+  .modal-wrap {
+    position: fixed; inset: 0; background: rgba(5,7,12,0.68); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal { width: 420px; background: #10131D; border: 1px solid var(--border-top); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+
+  #toast {
+    position: fixed; right: 20px; bottom: 78px; padding: 9px 15px; border-radius: 10px;
+    background: rgba(14, 22, 34, 0.95); border: 1px solid var(--accent-primary);
+    color: white; font-size: 12px; font-weight: 600; box-shadow: 0 10px 26px rgba(0,0,0,0.45);
+    opacity: 0; transform: translateY(8px); pointer-events: none; transition: all 0.2s; z-index: 200;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div id="ambient-glow"></div>
+
+<div class="shell">
+  <!-- TOP WINDOW BAR -->
+  <header class="titlebar" id="drag-bar">
+    <div class="brand">
+      <div class="brand-ring"></div>
+      <div class="brand-text">Lumina<span>Core</span></div>
+    </div>
+    <div class="top-center">
+      <div class="chip"><span>CPU</span><strong style="color:var(--accent-primary)" id="top-cpu">42°C</strong></div>
+      <div class="chip"><span>GPU</span><strong style="color:var(--accent-secondary)" id="top-gpu">46°C</strong></div>
+      <select id="top-profile" class="select" style="padding:3px 9px;font-size:11.5px;min-width:145px"></select>
+    </div>
+    <div class="win-btns">
+      <button class="win-btn" id="win-min">&#8211;</button>
+      <button class="win-btn" id="win-max">&#9633;</button>
+      <button class="win-btn close" id="win-close">&#10005;</button>
+    </div>
+  </header>
+
+  <!-- MIDDLE: 210px SLIM RAIL + STAGE -->
+  <div class="middle">
+    <aside class="rail">
+      <div class="rail-group">
+        <button class="rail-item" data-nav="themes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16c3.3 0 6-2.7 6-6 0-4.9-4.5-8.6-10-8.6z"/></svg>
+          Themes
+        </button>
+        <button class="rail-item active" data-nav="library">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          Library
+        </button>
+        <button class="rail-item" data-nav="lighting">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/></svg>
+          Lighting
+        </button>
+        <button class="rail-item" data-nav="profiles">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 10h10M7 14h6"/></svg>
+          Profiles
+        </button>
+        <button class="rail-item" data-nav="devices">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
+          Devices
+        </button>
+        <button class="rail-item" data-nav="cooling">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+          Cooling
+        </button>
+      </div>
+
+      <div class="rail-bottom">
+        <button class="rail-item" data-nav="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.2.62.78 1 1.43 1H21a2 2 0 1 1 0 4h-.09c-.65 0-1.23.38-1.51 1z"/></svg>
+          Settings
+        </button>
+      </div>
+    </aside>
+
+    <main class="stage">
+      <!-- 1. THEMES TAB -->
+      <section class="page" id="page-themes">
+        <div class="page-scroll">
+          <div class="page-header">
+            <div>
+              <div class="page-title">Unified Themes</div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">24 curated UI + Hardware RGB scenes — click any theme to transform everything</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn" id="btn-import-theme">Import Code</button>
+              <button class="btn" id="btn-export-theme">Export Share Code</button>
+              <button class="btn btn-accent" id="btn-create-theme">+ Create Custom</button>
+            </div>
+          </div>
+          <div class="filter-bar" id="theme-filters" style="margin-bottom:14px">
+            <button class="filter-pill active" data-tfilter="all">All (24+)</button>
+            <button class="filter-pill" data-tfilter="neon">Neon &amp; Cyber</button>
+            <button class="filter-pill" data-tfilter="minimal">Minimal &amp; Stealth</button>
+            <button class="filter-pill" data-tfilter="nature">Nature &amp; Aurora</button>
+            <button class="filter-pill" data-tfilter="gaming">Esports &amp; Gaming</button>
+            <button class="filter-pill" data-tfilter="warm">Warm &amp; Cozy</button>
+          </div>
+          <div class="grid-3" id="themes-grid"></div>
+        </div>
+      </section>
+
+      <!-- 2. LIBRARY TAB (Effects & Hot-Reload Lua Plugins) -->
+      <section class="page active" id="page-library">
+        <div class="page-scroll">
+          <div class="page-header">
+            <div class="filter-bar" id="lib-filters">
+              <button class="filter-pill active" data-filter="all">All</button>
+              <button class="filter-pill" data-filter="shaders">Shaders</button>
+              <button class="filter-pill" data-filter="reactive">Reactive</button>
+              <button class="filter-pill" data-filter="plugins">Plugins</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" class="input" id="lib-search" placeholder="Search effects &amp; plugins..." style="width:220px" />
+              <button class="btn btn-sm" id="btn-reload-plugins">Reload Plugins</button>
+            </div>
+          </div>
+          <div class="grid-3" id="library-grid"></div>
+        </div>
+      </section>
+
+      <!-- 3. LIGHTING STUDIO TAB -->
+      <section class="page" id="page-lighting">
+        <div class="lighting-split">
+          <div class="lighting-main">
+            <div class="live-banner">
+              <canvas id="studio-banner-canvas" width="320" height="44"></canvas>
+              <div class="live-banner-overlay">
+                <div>
+                  <div style="font-size:16px;font-weight:700" id="studio-fx-name">Rainbow Wave</div>
+                  <div style="font-size:11px;color:rgba(248,250,252,0.78)" id="studio-prof-name">Profile: Default</div>
+                </div>
+                <div class="chip" id="studio-fps-chip" style="background:rgba(8,10,16,0.7)">60 FPS</div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--text-muted);text-transform:uppercase">Active Channels</span>
+              <button class="btn btn-sm" id="btn-sync-all-ch">Sync All</button>
+            </div>
+            <div id="studio-channels-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
+          </div>
+
+          <aside class="inspector">
+            <div class="inspector-scroll">
+              <div style="font-size:15.5px;font-weight:700;margin-bottom:10px" id="insp-title">Solid Color</div>
+
+              <div class="field-row"><span>Master Brightness</span><span class="field-val" id="val-bright">90%</span></div>
+              <input type="range" id="sl-bright" min="0" max="100" value="90" />
+
+              <div id="blk-color">
+                <div class="hsv-box">
+                  <div class="hsv-pad" id="sv-pad"><canvas id="sv-cv" width="180" height="160"></canvas><div id="sv-thumb"></div></div>
+                  <div class="hue-bar" id="hue-bar"><canvas id="hue-cv" width="18" height="160"></canvas><div id="hue-thumb"></div></div>
+                </div>
+                <div style="display:grid;grid-template-columns:32px 1fr;gap:8px;margin-bottom:8px">
+                  <div id="hex-box" style="height:30px;border-radius:7px;border:1px solid rgba(255,255,255,0.2)"></div>
+                  <input type="text" class="input" id="inp-hex" value="#00E5FF" />
+                </div>
+                <div class="swatches" id="swatches"></div>
+              </div>
+
+              <div id="blk-motion" class="hidden">
+                <div class="field-row"><span>Speed</span><span class="field-val" id="val-spd">1.00x</span></div>
+                <input type="range" id="sl-spd" min="0.1" max="5" step="0.05" value="1" />
+                <div class="field-row"><span>Scale / Density</span><span class="field-val" id="val-scl">1.00x</span></div>
+                <input type="range" id="sl-scl" min="0.25" max="4" step="0.05" value="1" />
+                <div class="field-row"><span>Direction</span></div>
+                <div class="segmented">
+                  <button class="seg-btn active" id="dir-fwd">Forward</button>
+                  <button class="seg-btn" id="dir-rev">Reverse</button>
+                </div>
+              </div>
+
+              <div id="blk-audio" class="hidden">
+                <div class="field-row"><span>Audio Mode</span></div>
+                <select class="select" id="sel-amode" style="width:100%;margin-bottom:8px">
+                  <option value="SpectrumBars">Spectrum Bars</option>
+                  <option value="BassPulse">Bass Pulse</option>
+                  <option value="BeatShift">Beat Shift</option>
+                </select>
+                <div class="field-row"><span>Bass Sensitivity</span><span class="field-val" id="val-asens">1.60x</span></div>
+                <input type="range" id="sl-asens" min="0.5" max="4" step="0.05" value="1.6" />
+              </div>
+
+              <div id="blk-ambi" class="hidden">
+                <div class="field-row"><span>Smoothing</span><span class="field-val" id="val-asmooth">0.28</span></div>
+                <input type="range" id="sl-asmooth" min="0.05" max="0.95" step="0.02" value="0.28" />
+                <div class="field-row"><span>Saturation</span><span class="field-val" id="val-asat">1.35x</span></div>
+                <input type="range" id="sl-asat" min="0.5" max="2" step="0.05" value="1.35" />
+              </div>
+
+              <div id="blk-therm" class="hidden">
+                <div class="field-row"><span>Low Temp</span><span class="field-val" id="val-tcool">40°C</span></div>
+                <input type="range" id="sl-tcool" min="20" max="60" value="40" />
+                <div class="field-row"><span>High Temp</span><span class="field-val" id="val-thot">80°C</span></div>
+                <input type="range" id="sl-thot" min="60" max="100" value="80" />
+              </div>
+            </div>
+            <div style="padding-top:12px;border-top:1px solid var(--border-subtle)">
+              <button class="btn btn-accent" id="btn-save-prof" style="width:100%">Save to Profile</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- 3B. PROFILES & GAME TRIGGERS TAB -->
+      <section class="page" id="page-profiles">
+        <div class="page-scroll">
+          <div class="page-header">
+            <div>
+              <div class="page-title">Game &amp; Lighting Profiles</div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Bind executables (.exe) to auto-switch lighting when games launch</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-accent" id="pr-new">+ New Profile</button>
+              <button class="btn" id="pr-dup">Duplicate</button>
+              <button class="btn" id="pr-del">Delete</button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:980px">
+            <div class="card" id="pr-list" style="display:flex;flex-direction:column;gap:8px"></div>
+            <div class="card" style="display:flex;flex-direction:column;gap:10px">
+              <div class="field-row" style="margin:0"><span>Profile Name</span></div>
+              <input type="text" class="input" id="pr-name" />
+              <div class="field-row"><span>Auto-Switch Executables (.exe)</span></div>
+              <div style="display:flex;gap:8px">
+                <input type="text" class="input" id="pr-exe-inp" placeholder="e.g. cod.exe" style="flex:1" />
+                <button class="btn btn-accent" id="pr-exe-add">+ Bind</button>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="btn btn-sm" data-prexe="cod.exe">cod.exe</button>
+                <button class="btn btn-sm" data-prexe="ForzaHorizon5.exe">ForzaHorizon5.exe</button>
+                <button class="btn btn-sm" data-prexe="RDR2.exe">RDR2.exe</button>
+              </div>
+              <div id="pr-exe-list" style="display:flex;flex-direction:column;gap:6px"></div>
+              <button class="btn btn-accent" id="pr-save" style="align-self:flex-start;margin-top:4px">Save Profiles</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. DEVICES TAB (USB HID Hardware + Slide-Over Calibration Drawer) -->
+      <section class="page" id="page-devices">
+        <div class="page-scroll">
+          <div class="page-header">
+            <div>
+              <div class="page-title">USB HID Devices</div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Click a controller to open Color Order Fixer, LED Calibrator &amp; Live Diagnostics</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn" id="dev-btn-sync">Sync Channels</button>
+              <button class="btn btn-accent" id="dev-btn-reconnect">Reconnect HID</button>
+            </div>
+          </div>
+          <div class="devices-grid" id="devices-grid"></div>
+        </div>
+      </section>
+
+      <!-- 5. COOLING TAB -->
+      <section class="page" id="page-cooling">
+        <div class="page-scroll">
+          <div class="page-header">
+            <div class="page-title">Cooling &amp; Telemetry</div>
+            <button class="btn btn-accent" id="cool-btn-thermal">Activate Thermal Lighting</button>
+          </div>
+          <div class="telemetry-4">
+            <div class="card">
+              <div class="field-row" style="margin:0"><span>CPU TEMP</span><span class="field-val" id="c-cpu-load">14%</span></div>
+              <div class="metric-big" style="color:var(--accent-primary)" id="c-cpu-temp">42°C</div>
+              <div class="mini-bar"><div class="mini-bar-fill" id="c-cpu-bar" style="width:14%;background:var(--accent-primary)"></div></div>
+            </div>
+            <div class="card">
+              <div class="field-row" style="margin:0"><span>GPU TEMP</span><span class="field-val" style="color:var(--accent-secondary)" id="c-gpu-load">8%</span></div>
+              <div class="metric-big" style="color:var(--accent-secondary)" id="c-gpu-temp">46°C</div>
+              <div class="mini-bar"><div class="mini-bar-fill" id="c-gpu-bar" style="width:8%;background:var(--accent-secondary)"></div></div>
+            </div>
+            <div class="card">
+              <div class="field-row" style="margin:0"><span>SYSTEM FAN</span></div>
+              <div class="metric-big" style="color:var(--success);font-size:22px;margin-top:7px" id="c-fan-rpm">1,120 RPM</div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width:52%;background:var(--success)"></div></div>
+            </div>
+            <div class="card">
+              <div class="field-row" style="margin:0"><span>HID LATENCY</span></div>
+              <div class="metric-big" style="font-size:22px;margin-top:7px" id="c-hid-lat">0.0 ms</div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width:85%;background:linear-gradient(90deg,var(--accent-primary),var(--accent-secondary))"></div></div>
+            </div>
+          </div>
+
+          <div class="cooling-split">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+                <span style="font-weight:600">Live Temperature History (60s)</span>
+                <span style="font-size:11px;color:var(--text-secondary)"><span style="color:var(--accent-primary)">●</span> CPU &nbsp; <span style="color:var(--accent-secondary)">●</span> GPU</span>
+              </div>
+              <canvas id="temp-chart" width="540" height="250" style="width:100%;height:250px;display:block"></canvas>
+            </div>
+            <div class="card">
+              <div style="font-weight:600;margin-bottom:10px">Thermal Curve Thresholds</div>
+              <div class="field-row"><span>Cool Point</span><span class="field-val" id="cc-cool">40°C</span></div>
+              <input type="range" id="cc-sl-cool" min="20" max="60" value="40" />
+              <div class="field-row"><span>Mid Point</span><span class="field-val" id="cc-warm">65°C</span></div>
+              <input type="range" id="cc-sl-warm" min="45" max="80" value="65" />
+              <div class="field-row"><span>High Alert</span><span class="field-val" id="cc-hot">80°C</span></div>
+              <input type="range" id="cc-sl-hot" min="65" max="100" value="80" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. TWO-PANE SETTINGS TAB -->
+      <section class="page" id="page-settings">
+        <div class="settings-split">
+          <div class="settings-nav" id="settings-nav">
+            <button class="rail-item active" data-scat="general">General</button>
+            <button class="rail-item" data-scat="hid">HID Engine</button>
+            <button class="rail-item" data-scat="plugins">Plugins</button>
+            <button class="rail-item" data-scat="integrations">Integrations</button>
+            <button class="rail-item" data-scat="about">About</button>
+          </div>
+          <div class="settings-content">
+            <div id="scat-general">
+              <div class="page-title" style="margin-bottom:14px" data-i18n="set_general">General</div>
+              <div class="card">
+                <div class="setting-row"><span data-i18n="set_lang">Language / Dil</span><select class="select" id="s-lang"><option value="en">English</option><option value="tr">Türkçe</option></select></div>
+                <div class="setting-row"><span data-i18n="set_fps">Render Target FPS</span><select class="select" id="s-fps"><option value="30">30 FPS</option><option value="60">60 FPS</option></select></div>
+                <div class="setting-row"><span data-i18n="set_startup">Start with Windows</span><label class="switch"><input type="checkbox" id="s-startup" /><span class="switch-track"></span></label></div>
+                <div class="setting-row"><span data-i18n="set_startmin">Start minimized to tray</span><label class="switch"><input type="checkbox" id="s-startmin" /><span class="switch-track"></span></label></div>
+                <div class="setting-row"><span data-i18n="set_mintray">Minimize to tray on close</span><label class="switch"><input type="checkbox" id="s-mintray" /><span class="switch-track"></span></label></div>
+                <div class="setting-row"><span data-i18n="set_hotkey">Global Blackout Hotkey (Ctrl+Alt+L)</span><label class="switch"><input type="checkbox" id="s-hotkey" /><span class="switch-track"></span></label></div>
+                <div class="setting-row"><span data-i18n="set_watcher">Auto-switch profiles on game launch</span><label class="switch"><input type="checkbox" id="s-watcher" /><span class="switch-track"></span></label></div>
+              </div>
+            </div>
+
+            <div id="scat-hid" class="hidden">
+              <div class="page-title" style="margin-bottom:14px">HID Engine</div>
+              <div class="card">
+                <div class="setting-row"><span>Controller</span><strong id="s-hid-name" style="color:var(--accent-primary)">ASRock Polychrome USB</strong></div>
+                <div class="setting-row"><span>Packet Latency</span><strong id="s-hid-lat">0.0 ms</strong></div>
+                <div style="display:flex;gap:8px;margin-top:14px">
+                  <button class="btn btn-accent" id="s-btn-reconn">Reconnect USB HID</button>
+                  <button class="btn" id="s-btn-copy-diag">Copy HID Diagnostic Report</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="scat-plugins" class="hidden">
+              <div class="page-title" style="margin-bottom:14px">Lua Plugin Engine (Hot-Reload)</div>
+              <div class="card">
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Drop <code>.lua</code> shader scripts into the Plugins folder for instant hot-reload without restarting.</div>
+                <div style="font-family:Consolas;font-size:11px;color:var(--accent-primary);margin-bottom:12px" id="s-plugins-dir"></div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-accent" id="s-btn-open-plugins">Open Plugins Folder</button>
+                  <button class="btn" id="s-btn-reload-plugins">Reload Now</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="scat-integrations" class="hidden">
+              <div class="page-title" style="margin-bottom:14px">Integrations</div>
+              <div class="card">
+                <div class="setting-row">
+                  <div>
+                    <div>Local Web Remote (http://localhost:5050)</div>
+                    <div style="font-size:11px;color:var(--text-muted)">Control lighting from any phone or browser on your Wi-Fi</div>
+                  </div>
+                  <label class="switch"><input type="checkbox" id="s-webremote" /><span class="switch-track"></span></label>
+                </div>
+                <div class="setting-row">
+                  <div>
+                    <div>WLED Wi-Fi Strip Sync (UDP Port 21324)</div>
+                    <div style="font-size:11px;color:var(--text-muted)">Sync room/desk ESP32 WLED strips at 30 Hz</div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <input type="text" class="input" id="s-wled-ip" placeholder="192.168.1.100" style="width:125px" />
+                    <label class="switch"><input type="checkbox" id="s-wled" /><span class="switch-track"></span></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="scat-about" class="hidden">
+              <div class="page-title" style="margin-bottom:14px">About LuminaCore</div>
+              <div class="card">
+                <div style="font-weight:700;font-size:15px;color:var(--accent-primary);margin-bottom:4px">LuminaCore v2.0 • .NET 8 Native HID + WebView2</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">User-space 60 FPS ARGB Lighting Engine with Lua Hot-Reload &amp; Pro HID Calibration</div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn" id="s-btn-folder">Open Config Folder</button>
+                  <button class="btn btn-accent" id="s-btn-export">Export Profiles Backup</button>
+                  <button class="btn" id="s-btn-update">Check for Updates</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- PERSISTENT BOTTOM PLAYER BAR (64px) -->
+  <footer class="player-bar">
+    <div class="player-left">
+      <canvas id="player-thumb" width="42" height="42"></canvas>
+      <div style="min-width:0">
+        <div class="player-name" id="p-fx-name">Rainbow Wave</div>
+        <div class="player-sub" id="p-prof-name">Default</div>
+      </div>
+    </div>
+
+    <div class="player-center">
+      <button class="btn btn-icon" id="p-prev" title="Previous Effect">&#9198;</button>
+      <button class="play-main" id="p-play" title="Play / Pause">&#10074;&#10074;</button>
+      <button class="btn btn-icon" id="p-next" title="Next Effect">&#9197;</button>
+      <button class="btn btn-sm" id="p-shuffle" title="Auto-cycle effects every 15s">Shuffle: Off</button>
+    </div>
+
+    <div class="player-right">
+      <input type="range" id="p-bright" min="0" max="100" value="90" style="width:92px" title="Master Brightness" />
+      <button class="btn btn-accent btn-sm" id="p-blackout" title="Ctrl + Alt + L">Lights On</button>
+      <div class="chip">
+        <span class="status-dot" id="p-hid-dot"></span>
+        <span id="p-hid-pill">USB HID • 60 FPS</span>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- SLIDE-OVER HID CALIBRATION & DIAGNOSTICS DRAWER -->
+<div class="drawer-backdrop" id="drawer-bg"></div>
+<aside class="drawer" id="hid-drawer">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:16px;font-weight:700" id="dr-title">HID Calibration</div>
+      <div style="font-size:11px;color:var(--text-muted)" id="dr-vid">VID:PID 26CE:01A2</div>
+    </div>
+    <button class="btn btn-sm" id="dr-close">Close</button>
+  </div>
+
+  <div class="card" style="padding:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+      <div><div style="font-size:10px;color:var(--text-muted)">LATENCY</div><strong id="dr-lat" style="color:var(--accent-primary)">0.0 ms</strong></div>
+      <div><div style="font-size:10px;color:var(--text-muted)">PUSH RATE</div><strong id="dr-fps" style="color:var(--success)">30 Hz</strong></div>
+      <div><div style="font-size:10px;color:var(--text-muted)">CHANNELS</div><strong id="dr-ch">5</strong></div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:12px">
+    <div style="font-weight:600;font-size:12.5px;margin-bottom:8px">Per-Channel Color Order Fixer</div>
+    <div id="dr-color-orders" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+
+  <div class="card" style="padding:12px">
+    <div style="font-weight:600;font-size:12.5px;margin-bottom:4px">Interactive LED Count Calibrator</div>
+    <div style="font-size:11px;color:var(--text-secondary);margin-bottom:10px">Drag the slider to light up LEDs one-by-one in bright green on your hardware.</div>
+    <select class="select" id="dr-cal-ch" style="width:100%;margin-bottom:8px"></select>
+    <div class="field-row"><span>Lit LEDs (Bright Green)</span><span class="field-val" id="dr-cal-val">0</span></div>
+    <input type="range" id="dr-cal-sl" min="0" max="80" value="0" />
+    <button class="btn btn-sm" id="dr-cal-stop" style="margin-top:6px">Exit Calibration Preview</button>
+  </div>
+
+  <button class="btn btn-accent" id="dr-copy-report">Copy HID Diagnostic Report</button>
+</aside>
+
+<!-- CREATE / IMPORT / EXPORT THEME MODAL -->
+<div class="modal-wrap hidden" id="theme-modal">
+  <div class="modal">
+    <div style="font-size:15px;font-weight:700" id="tm-title">Theme</div>
+    <div id="tm-create-body" class="hidden" style="display:flex;flex-direction:column;gap:8px">
+      <input class="input" id="tm-name" placeholder="Theme Name (e.g. Midnight Neon)" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <label style="font-size:11px;color:var(--text-secondary)">Primary Accent <input type="color" id="tm-c1" value="#00E5FF" style="width:100%;height:30px;border:none;background:none" /></label>
+        <label style="font-size:11px;color:var(--text-secondary)">Secondary Accent <input type="color" id="tm-c2" value="#8B5CF6" style="width:100%;height:30px;border:none;background:none" /></label>
+      </div>
+      <select class="select" id="tm-fx">
+        <option value="Plasma">Plasma</option>
+        <option value="RainbowWave">Rainbow Wave</option>
+        <option value="Gradient">Gradient</option>
+        <option value="Breathing">Breathing</option>
+        <option value="Solid">Solid Color</option>
+      </select>
+    </div>
+    <div id="tm-code-body" class="hidden">
+      <textarea class="input" id="tm-code-txt" rows="3" style="width:100%;resize:none;font-family:Consolas" placeholder="LUMINA-THEME-..."></textarea>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn" id="tm-cancel">Cancel</button>
+      <button class="btn btn-accent" id="tm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast">Saved ✓</div>
+
+<script>
+const post = (type, payload = {}) => {
+  if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage({ type, ...payload });
+};
+
+const BUILTIN_EFFECTS = [
+  { id: 'Solid', name: 'Solid Color', desc: 'Pure static HEX / RGB', cat: 'shaders', badge: '', grad: 'linear-gradient(135deg,#00B4D8,#00E5FF)' },
+  { id: 'Gradient', name: 'Gradient', desc: 'Multi-stop color flow', cat: 'shaders', badge: '', grad: 'linear-gradient(135deg,#00E5FF,#8B5CF6,#EC4899)' },
+  { id: 'RainbowWave', name: 'Rainbow Wave', desc: 'Directional spectrum', cat: 'shaders', badge: '', grad: 'linear-gradient(90deg,#FF3B5C,#FFBE0B,#00F5A0,#00D9F5,#A855F7)' },
+  { id: 'RainbowSpiral', name: 'Rainbow Spiral', desc: 'Rotating color vortex', cat: 'shaders', badge: '', grad: 'linear-gradient(135deg,#FF2E93,#7B61FF,#00F0FF,#00FF9C)' },
+  { id: 'Breathing', name: 'Breathing', desc: 'Soft organic pulse', cat: 'shaders', badge: '', grad: 'linear-gradient(135deg,#181230,#8B5CF6,#181230)' },
+  { id: 'Plasma', name: 'Plasma', desc: 'Liquid neon energy', cat: 'shaders', badge: '', grad: 'linear-gradient(135deg,#00E5FF,#8B5CF6,#EC4899,#00E5FF)' },
+  { id: 'ScreenAmbilight', name: 'Screen Ambilight', desc: 'Live monitor edge sync', cat: 'reactive', badge: 'DXGI', grad: 'linear-gradient(135deg,#0EA5E9,#38BDF8,#F97316)' },
+  { id: 'AudioVisualizer', name: 'Audio Reactive', desc: 'WASAPI FFT spectrum', cat: 'reactive', badge: 'AUDIO', grad: 'linear-gradient(135deg,#00E5FF,#8B5CF6,#FF5E00)' },
+  { id: 'HardwareTelemetry', name: 'Thermal', desc: 'CPU / GPU temperature curve', cat: 'reactive', badge: 'THERMAL', grad: 'linear-gradient(135deg,#D7F4FF,#FFAE00,#FF183A)' }
+];
+
+const BUILTIN_THEMES = [
+  // Minimal & Stealth
+  { id: 'obsidian', name: 'Obsidian Stealth', cat: 'minimal', desc: 'Matte black & ice cyan', bg: '#07080B', card: 'rgba(16,19,28,0.82)', c1: '#00E5FF', c2: '#64748B', fx: 'Breathing', hex: '#D7F4FF' },
+  { id: 'monochrome', name: 'Pure Monochrome', cat: 'minimal', desc: 'Crisp studio white', bg: '#08090C', card: 'rgba(18,20,26,0.84)', c1: '#F8FAFC', c2: '#94A3B8', fx: 'Solid', hex: '#FFFFFF' },
+  { id: 'titanium', name: 'Titanium Slate', cat: 'minimal', desc: 'Cool metallic silver-blue', bg: '#090B10', card: 'rgba(19,23,32,0.84)', c1: '#93C5FD', c2: '#475569', fx: 'Gradient', hex: '#93C5FD' },
+  { id: 'carbon-red', name: 'Carbon Tactical', cat: 'minimal', desc: 'Stealth dark & crimson accent', bg: '#0A0708', card: 'rgba(22,15,17,0.84)', c1: '#EF4444', c2: '#7F1D1D', fx: 'Breathing', hex: '#EF4444' },
+
+  // Neon & Cyber
+  { id: 'cyberpunk', name: 'Cyberpunk Neon', cat: 'neon', desc: 'Electric cyan & hot pink', bg: '#090710', card: 'rgba(20,16,34,0.82)', c1: '#00F0FF', c2: '#FF2E93', fx: 'Plasma', hex: '#00F0FF' },
+  { id: 'synthwave', name: 'Synthwave 84', cat: 'neon', desc: 'Retro 80s magenta & violet', bg: '#10071A', card: 'rgba(26,15,42,0.82)', c1: '#FF2E93', c2: '#A855F7', fx: 'RainbowSpiral', hex: '#FF2E93' },
+  { id: 'tokyo-night', name: 'Tokyo Night', cat: 'neon', desc: 'Deep indigo & neon blue', bg: '#080A14', card: 'rgba(17,21,38,0.84)', c1: '#7AA2F7', c2: '#BB9AF7', fx: 'Gradient', hex: '#7AA2F7' },
+  { id: 'hyper-vapor', name: 'Hyper Vaporwave', cat: 'neon', desc: 'Pastel teal & bubblegum', bg: '#0D0816', card: 'rgba(24,16,38,0.82)', c1: '#2DD4BF', c2: '#F472B6', fx: 'Gradient', hex: '#2DD4BF' },
+  { id: 'ultraviolet', name: 'Ultraviolet Pulse', cat: 'neon', desc: 'Deep electric violet glow', bg: '#0A0714', card: 'rgba(21,15,38,0.84)', c1: '#8B5CF6', c2: '#C084FC', fx: 'Breathing', hex: '#8B5CF6' },
+  { id: 'laser-lime', name: 'Acid Matrix', cat: 'neon', desc: 'Hacker emerald & toxic lime', bg: '#060C08', card: 'rgba(13,25,18,0.84)', c1: '#00FF9C', c2: '#84CC16', fx: 'Gradient', hex: '#00FF9C' },
+
+  // Nature & Aurora
+  { id: 'arctic', name: 'Arctic Frost', cat: 'nature', desc: 'Glacier sky & frozen white', bg: '#070C14', card: 'rgba(14,24,38,0.82)', c1: '#38BDF8', c2: '#E0F2FE', fx: 'Gradient', hex: '#38BDF8' },
+  { id: 'aurora', name: 'Northern Aurora', cat: 'nature', desc: 'Emerald & polar violet', bg: '#060D0E', card: 'rgba(13,26,28,0.84)', c1: '#10B981', c2: '#6366F1', fx: 'Gradient', hex: '#10B981' },
+  { id: 'deep-ocean', name: 'Abyssal Ocean', cat: 'nature', desc: 'Bioluminescent deep sea', bg: '#050A12', card: 'rgba(11,22,36,0.84)', c1: '#06B6D4', c2: '#1D4ED8', fx: 'Breathing', hex: '#06B6D4' },
+  { id: 'sakura', name: 'Sakura Blossom', cat: 'nature', desc: 'Soft cherry pink & pearl', bg: '#11090E', card: 'rgba(30,17,25,0.84)', c1: '#F9A8D4', c2: '#F43F5E', fx: 'Gradient', hex: '#F9A8D4' },
+  { id: 'emerald-forest', name: 'Emerald Canopy', cat: 'nature', desc: 'Lush jade & mint mist', bg: '#060E0A', card: 'rgba(13,27,20,0.84)', c1: '#34D399', c2: '#059669', fx: 'Breathing', hex: '#34D399' },
+
+  // Esports & Gaming
+  { id: 'cod-nvg', name: 'Night Vision Ops', cat: 'gaming', desc: 'Phosphor green NVG glow', bg: '#060B07', card: 'rgba(13,24,16,0.84)', c1: '#22C55E', c2: '#15803D', fx: 'Solid', hex: '#22C55E' },
+  { id: 'forza-horizon', name: 'Horizon Festival', cat: 'gaming', desc: 'Live DXGI screen ambilight', bg: '#0C0910', card: 'rgba(24,18,32,0.84)', c1: '#F97316', c2: '#EC4899', fx: 'ScreenAmbilight', hex: '#F97316' },
+  { id: 'valorant-rad', name: 'Radiant Protocol', cat: 'gaming', desc: 'Sharp coral red & teal', bg: '#10080C', card: 'rgba(28,15,21,0.84)', c1: '#FF4655', c2: '#00E5FF', fx: 'Gradient', hex: '#FF4655' },
+  { id: 'bass-club', name: 'Bass Reactor', cat: 'gaming', desc: 'WASAPI audio-reactive beat', bg: '#0B0814', card: 'rgba(22,16,36,0.84)', c1: '#00E5FF', c2: '#FF5E00', fx: 'AudioVisualizer', hex: '#00E5FF' },
+  { id: 'thermal-core', name: 'Thermal Overclock', cat: 'gaming', desc: 'Live CPU/GPU heat curve', bg: '#100A07', card: 'rgba(28,19,14,0.84)', c1: '#F59E0B', c2: '#EF4444', fx: 'HardwareTelemetry', hex: '#F59E0B' },
+
+  // Warm & Cozy
+  { id: 'ember', name: 'Ember Forge', cat: 'warm', desc: 'Molten orange & crimson', bg: '#110806', card: 'rgba(30,17,14,0.82)', c1: '#FF6B00', c2: '#FF183A', fx: 'Gradient', hex: '#FF6B00' },
+  { id: 'sunset-gold', name: 'Golden Hour', cat: 'warm', desc: 'Warm amber & soft gold', bg: '#110D07', card: 'rgba(30,24,14,0.84)', c1: '#FBBF24', c2: '#F97316', fx: 'Breathing', hex: '#FBBF24' },
+  { id: 'rdr2-camp', name: 'Frontier Campfire', cat: 'warm', desc: 'Cozy hearth flame glow', bg: '#120906', card: 'rgba(32,18,13,0.84)', c1: '#EA580C', c2: '#991B1B', fx: 'Gradient', hex: '#EA580C' },
+  { id: 'royal-gold', name: 'Obsidian & Gold', cat: 'warm', desc: 'Luxury champagne gold', bg: '#0B0A08', card: 'rgba(24,21,16,0.84)', c1: '#EAB308', c2: '#FEF08A', fx: 'Solid', hex: '#F5B82E' }
+];
+
+let customThemes = [];
+try { customThemes = JSON.parse(localStorage.getItem('luminacore_themes') || '[]'); } catch {}
+let activeThemeId = localStorage.getItem('luminacore_active_theme') || 'obsidian';
+
+let state = { activeEffect: 'RainbowWave', activePluginId: null, isPaused: false, brightness: 0.9, isBlackout: false, isConnected: false, profiles: [], zones: [], plugins: [], params: {}, settings: {}, hidDiagnostics: {} };
+let latestBannerStrip = ['#00E5FF', '#8B5CF6', '#EC4899'];
+let latestZoneStrips = {};
+let cpuHist = Array(60).fill(42), gpuHist = Array(60).fill(45);
+let libFilter = 'all', libQuery = '', themeFilter = 'all';
+let shuffleTimer = null;
+let toastTimer = null;
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2100);
+}
+
+/* Unified Theme Engine */
+function applyTheme(t, syncHardware = true) {
+  activeThemeId = t.id;
+  localStorage.setItem('luminacore_active_theme', t.id);
+  const r = document.documentElement.style;
+  r.setProperty('--bg-primary', t.bg);
+  r.setProperty('--bg-card', t.card);
+  r.setProperty('--accent-primary', t.c1);
+  r.setProperty('--accent-secondary', t.c2);
+  r.setProperty('--glow-color', t.c1 + '38');
+  renderThemesGrid();
+  if (syncHardware) {
+    post('applyThemeHardware', { effect: t.fx, primaryHex: t.hex || t.c1, secondaryHex: t.c2 || t.c1 });
+    showToast(`Theme "${t.name}" applied ✓`);
+  }
+}
+
+function renderThemesGrid() {
+  const all = [...BUILTIN_THEMES, ...customThemes].filter(t => themeFilter === 'all' || (t.cat || 'custom') === themeFilter);
+  const grid = document.getElementById('themes-grid');
+  grid.innerHTML = all.map(t => `
+    <button class="visual-card ${t.id === activeThemeId ? 'selected' : ''}" data-tid="${t.id}">
+      <div class="card-banner" style="background:linear-gradient(135deg,${t.bg} 0%,${t.c1} 52%,${t.c2} 100%)">
+        <span class="card-badge">${t.fx}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${t.name}</div>
+        <div class="card-sub">${t.desc || 'Custom UI + RGB Sync'}</div>
+      </div>
+    </button>
+  `).join('');
+  grid.querySelectorAll('[data-tid]').forEach(b => {
+    b.onclick = () => {
+      const found = [...BUILTIN_THEMES, ...customThemes].find(x => x.id === b.dataset.tid);
+      if (found) applyTheme(found, true);
+    };
+  });
+}
+
+/* Library Grid (Built-in Effects + Hot-Reload Lua Plugins) */
+function renderLibraryGrid() {
+  const plugins = (state.plugins || []).map(pl => ({
+    id: pl.id, name: pl.name, desc: pl.description, cat: 'plugins', badge: 'PLUGIN', isPlugin: true,
+    grad: `linear-gradient(135deg, ${pl.accent || '#10B981'}, #00E5FF, #8B5CF6)`
+  }));
+  const items = [...BUILTIN_EFFECTS, ...plugins].filter(item => {
+    if (libFilter !== 'all' && item.cat !== libFilter) return false;
+    if (libQuery && !(item.name + ' ' + item.desc).toLowerCase().includes(libQuery)) return false;
+    return true;
+  });
+
+  const grid = document.getElementById('library-grid');
+  grid.innerHTML = items.map(it => {
+    const selected = it.isPlugin ? (state.activePluginId === it.id) : (!state.activePluginId && state.activeEffect === it.id);
+    return `
+      <button class="visual-card ${selected ? 'selected' : ''}" data-item-id="${it.id}" data-is-plugin="${!!it.isPlugin}">
+        <div class="card-banner" style="background:${it.grad}">
+          ${it.badge ? `<span class="card-badge ${it.isPlugin ? 'plugin' : ''}">${it.badge}</span>` : ''}
+        </div>
+        <div class="card-body">
+          <div class="card-title">${it.name}</div>
+          <div class="card-sub">${it.desc}</div>
+        </div>
+      </button>
+    `;
+  }).join('');
+
+  grid.querySelectorAll('.visual-card').forEach(c => {
+    c.onclick = () => {
+      if (c.dataset.isPlugin === 'true') post('selectPlugin', { pluginId: c.dataset.itemId });
+      else post('selectEffect', { effect: c.dataset.itemId });
+    };
+  });
+}
+
+/* Devices Grid & Slide-Over Calibration Drawer */
+function renderDevicesGrid() {
+  const d = state.hidDiagnostics || {};
+  const grid = document.getElementById('devices-grid');
+  grid.innerHTML = `
+    <div class="card device-hw-card" id="open-hid-drawer">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:15px;font-weight:700">${d.controllerName || 'ASRock Polychrome USB HID'}</div>
+          <div style="font-size:11.5px;color:var(--text-muted);font-family:Consolas;margin-top:2px">VID:PID ${d.vidPid || '26CE:01A2'}</div>
+        </div>
+        <div class="chip"><span class="status-dot ${d.isConnected ? 'connected' : ''}"></span><span>${d.isConnected ? 'Connected' : 'Offline'}</span></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="chip">${d.channelCount || (state.zones || []).length} Channels</span>
+        <span class="chip" id="dev-lat-chip">Latency: ${d.packetLatencyMs ?? 0} ms</span>
+        <span class="chip">Direct User-Space HID</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid var(--border-subtle)">
+        <span style="font-size:11.5px;color:var(--accent-primary);font-weight:600">⚙ Calibrate LEDs &amp; Color Order</span>
+        <span style="font-size:11px;color:var(--text-muted)">Click to open →</span>
+      </div>
+    </div>
+  `;
+  document.getElementById('open-hid-drawer').onclick = openHidDrawer;
+}
+
+function openHidDrawer() {
+  const d = state.hidDiagnostics || {};
+  document.getElementById('dr-title').textContent = d.controllerName || 'USB HID Controller';
+  document.getElementById('dr-vid').textContent = `VID:PID ${d.vidPid || '26CE:01A2'}`;
+  document.getElementById('dr-lat').textContent = `${d.packetLatencyMs ?? 0} ms`;
+  document.getElementById('dr-fps').textContent = `${d.hardwareFps ?? 30} Hz`;
+  document.getElementById('dr-ch').textContent = `${d.channelCount || (state.zones || []).length}`;
+
+  const ordersBox = document.getElementById('dr-color-orders');
+  ordersBox.innerHTML = (state.zones || []).map(z => `
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px">${z.name}</span>
+      <select class="select" data-ch-order="${z.zoneIndex}" style="padding:3px 8px;width:88px">
+        ${['GRB','RGB','BRG','RBG'].map(o => `<option value="${o}">${o}</option>`).join('')}
+      </select>
+    </div>
+  `).join('');
+  ordersBox.querySelectorAll('[data-ch-order]').forEach(sel => {
+    sel.onchange = () => {
+      post('setChannelColorOrder', { channelIndex: +sel.dataset.chOrder, order: sel.value });
+      showToast(`Channel color order → ${sel.value}`);
+    };
+  });
+
+  const calSel = document.getElementById('dr-cal-ch');
+  calSel.innerHTML = (state.zones || []).map(z => `<option value="${z.zoneIndex}">${z.name}</option>`).join('');
+  document.getElementById('dr-cal-sl').value = 0;
+  document.getElementById('dr-cal-val').textContent = '0';
+
+  document.getElementById('drawer-bg').classList.add('open');
+  document.getElementById('hid-drawer').classList.add('open');
+}
+
+function closeHidDrawer() {
+  post('stopCalibration');
+  document.getElementById('drawer-bg').classList.remove('open');
+  document.getElementById('hid-drawer').classList.remove('open');
+}
+
+/* Studio Active Channels Cards */
+function renderStudioChannels() {
+  const box = document.getElementById('studio-channels-grid');
+  box.innerHTML = (state.zones || []).map(z => `
+    <div class="card" style="padding:11px 12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+        <div>
+          <div style="font-weight:600;font-size:12.5px">${z.name}</div>
+          <div style="font-size:10.5px;color:var(--text-muted)">${z.ledCount} LEDs • ${z.isSynced ? 'Synced' : 'Solo'}</div>
+        </div>
+        <label class="switch"><input type="checkbox" ${z.isEnabled ? 'checked' : ''} data-st-z="${z.zoneIndex}" /><span class="switch-track"></span></label>
+      </div>
+      <canvas id="st-strip-${z.zoneIndex}" width="64" height="6" style="width:100%;height:6px;border-radius:99px;display:block;background:#141824"></canvas>
+    </div>
+  `).join('');
+  box.querySelectorAll('[data-st-z]').forEach(chk => chk.onchange = () => post('toggleZone', { zoneIndex: +chk.dataset.stZ, enabled: chk.checked }));
+}
+
+/* Single requestAnimationFrame Canvas Render Loop (Zero DOM CSS Thrashing) */
+function animationFrameLoop() {
+  const drawStrip = (canvasId, colors) => {
+    const cv = document.getElementById(canvasId);
+    if (!cv || !colors || colors.length === 0) return;
+    const ctx = cv.getContext('2d');
+    const g = ctx.createLinearGradient(0, 0, cv.width, 0);
+    colors.forEach((hex, i) => g.addColorStop(i / Math.max(1, colors.length - 1), hex));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, cv.width, cv.height);
+  };
+
+  drawStrip('player-thumb', latestBannerStrip);
+  if (document.getElementById('page-lighting').classList.contains('active')) {
+    drawStrip('studio-banner-canvas', latestBannerStrip);
+    Object.entries(latestZoneStrips).forEach(([zIdx, cols]) => drawStrip(`st-strip-${zIdx}`, cols));
+  }
+  requestAnimationFrame(animationFrameLoop);
+}
+
+/* 2D HSV Picker */
+let curH = 186, curS = 1, curV = 1;
+function hsvToHex(h, s, v) {
+  h = ((h % 360) + 360) % 360;
+  const c = v * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = v - c;
+  let r=0,g=0,b=0;
+  if (h<60)[r,g,b]=[c,x,0]; else if (h<120)[r,g,b]=[x,c,0]; else if (h<180)[r,g,b]=[0,c,x];
+  else if (h<240)[r,g,b]=[0,x,c]; else if (h<300)[r,g,b]=[x,0,c]; else [r,g,b]=[c,0,x];
+  const th = n => Math.round((n+m)*255).toString(16).padStart(2,'0').toUpperCase();
+  return `#${th(r)}${th(g)}${th(b)}`;
+}
+function drawHue() {
+  const cv = document.getElementById('hue-cv'), ctx = cv.getContext('2d');
+  const g = ctx.createLinearGradient(0,0,0,cv.height);
+  [0,60,120,180,240,300,360].forEach((d,i) => g.addColorStop(i/6, `hsl(${d},100%,50%)`));
+  ctx.fillStyle = g; ctx.fillRect(0,0,cv.width,cv.height);
+}
+function drawSv() {
+  const cv = document.getElementById('sv-cv'), ctx = cv.getContext('2d');
+  ctx.fillStyle = `hsl(${curH},100%,50%)`; ctx.fillRect(0,0,cv.width,cv.height);
+  const w = ctx.createLinearGradient(0,0,cv.width,0); w.addColorStop(0,'#fff'); w.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle = w; ctx.fillRect(0,0,cv.width,cv.height);
+  const b = ctx.createLinearGradient(0,0,0,cv.height); b.addColorStop(0,'rgba(0,0,0,0)'); b.addColorStop(1,'#000');
+  ctx.fillStyle = b; ctx.fillRect(0,0,cv.width,cv.height);
+}
+function syncThumbs() {
+  document.getElementById('sv-thumb').style.left = `${curS*100}%`;
+  document.getElementById('sv-thumb').style.top = `${(1-curV)*100}%`;
+  document.getElementById('hue-thumb').style.top = `${(curH/360)*100}%`;
+}
+function initPicker() {
+  drawHue(); drawSv(); syncThumbs();
+  const sv = document.getElementById('sv-pad'), hu = document.getElementById('hue-bar');
+  const onSv = e => {
+    const r = sv.getBoundingClientRect();
+    curS = Math.max(0, Math.min(1, (e.clientX - r.left)/r.width));
+    curV = 1 - Math.max(0, Math.min(1, (e.clientY - r.top)/r.height));
+    syncThumbs();
+    const hex = hsvToHex(curH, curS, curV);
+    document.getElementById('inp-hex').value = hex;
+    document.getElementById('hex-box').style.background = hex;
+    post('setParam', { key: 'PrimaryColorHex', value: hex });
+  };
+  const onHu = e => {
+    const r = hu.getBoundingClientRect();
+    curH = Math.max(0, Math.min(359.9, ((e.clientY - r.top)/r.height)*360));
+    drawSv(); syncThumbs();
+    const hex = hsvToHex(curH, curS, curV);
+    document.getElementById('inp-hex').value = hex;
+    document.getElementById('hex-box').style.background = hex;
+    post('setParam', { key: 'PrimaryColorHex', value: hex });
+  };
+  sv.onpointerdown = e => { sv.setPointerCapture(e.pointerId); onSv(e); };
+  sv.onpointermove = e => { if (e.buttons === 1) onSv(e); };
+  hu.onpointerdown = e => { hu.setPointerCapture(e.pointerId); onHu(e); };
+  hu.onpointermove = e => { if (e.buttons === 1) onHu(e); };
+
+  const sw = document.getElementById('swatches');
+  ['#00E5FF','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444','#FFFFFF','#38BDF8'].forEach(hex => {
+    const d = document.createElement('div'); d.className = 'swatch'; d.style.background = hex;
+    d.onclick = () => { document.getElementById('inp-hex').value = hex; document.getElementById('hex-box').style.background = hex; post('setParam', { key: 'PrimaryColorHex', value: hex }); };
+    sw.appendChild(d);
+  });
+}
+
+function drawTempChart() {
+  const cv = document.getElementById('temp-chart'); if (!cv) return;
+  const ctx = cv.getContext('2d'), w = cv.width, h = cv.height;
+  ctx.clearRect(0,0,w,h);
+  const padL=32, padR=10, padT=10, padB=18, pw=w-padL-padR, ph=h-padT-padB;
+  ctx.strokeStyle='rgba(148,163,184,0.14)'; ctx.fillStyle='#64748B'; ctx.font='10px Segoe UI';
+  [30,50,70,90].forEach(t => {
+    const y = padT + ph*(1-(t-20)/80);
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(w-padR,y); ctx.stroke();
+    ctx.fillText(`${t}°`, 4, y+3);
+  });
+  const series = (arr, col, fill) => {
+    if (arr.length < 2) return;
+    ctx.beginPath();
+    arr.forEach((v,i) => {
+      const x = padL + pw*(i/(arr.length-1)), y = padT + ph*(1-Math.max(0,Math.min(1,(v-20)/80)));
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle = col; ctx.lineWidth = 2.2; ctx.stroke();
+    ctx.lineTo(padL+pw, padT+ph); ctx.lineTo(padL, padT+ph); ctx.closePath();
+    const g = ctx.createLinearGradient(0,padT,0,padT+ph); g.addColorStop(0,fill); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fill();
+  };
+  series(gpuHist, '#8B5CF6', 'rgba(139,92,246,0.28)');
+  series(cpuHist, '#00E5FF', 'rgba(0,229,255,0.28)');
+}
+
+/* State & Throttled 25 FPS Tick Handlers */
+function applyState(s) {
+  state = { ...state, ...s };
+  document.body.classList.toggle('blackout', !!state.isBlackout);
+
+  const sel = document.getElementById('top-profile');
+  sel.innerHTML = (state.profiles || []).map(p => `<option value="${p.id}" ${p.id===state.activeProfileId?'selected':''}>${p.name}</option>`).join('');
+
+  let fxName = (BUILTIN_EFFECTS.find(e => e.id === state.activeEffect) || BUILTIN_EFFECTS[0]).name;
+  if (state.activePluginId) {
+    const pl = (state.plugins || []).find(x => x.id === state.activePluginId);
+    if (pl) fxName = `${pl.name} (Plugin)`;
+  }
+  const prof = (state.profiles || []).find(p => p.id === state.activeProfileId);
+
+  document.getElementById('p-fx-name').textContent = fxName;
+  document.getElementById('p-prof-name').textContent = prof ? prof.name : 'Default';
+  document.getElementById('studio-fx-name').textContent = fxName;
+  document.getElementById('studio-prof-name').textContent = `Profile: ${prof ? prof.name : 'Default'}`;
+  document.getElementById('insp-title').textContent = fxName;
+  document.getElementById('p-play').innerHTML = state.isPaused ? '&#9654;' : '&#10074;&#10074;';
+
+  const bPct = Math.round((state.brightness ?? 0.9) * 100);
+  document.getElementById('p-bright').value = bPct;
+  document.getElementById('sl-bright').value = bPct;
+  document.getElementById('val-bright').textContent = `${bPct}%`;
+
+  const blk = document.getElementById('p-blackout');
+  blk.textContent = state.isBlackout ? 'Blackout' : 'Lights On';
+  blk.className = state.isBlackout ? 'btn btn-danger btn-sm' : 'btn btn-accent btn-sm';
+  document.getElementById('p-hid-dot').classList.toggle('connected', !!state.isConnected);
+  document.getElementById('p-hid-pill').textContent = state.hidBadge || 'USB HID • 60 FPS';
+
+  // Inspector blocks
+  const ef = state.activeEffect;
+  document.getElementById('blk-color').classList.toggle('hidden', !!state.activePluginId || (ef !== 'Solid' && ef !== 'Breathing'));
+  document.getElementById('blk-motion').classList.toggle('hidden', !state.activePluginId && !['RainbowWave','RainbowSpiral','Breathing','Plasma'].includes(ef));
+  document.getElementById('blk-audio').classList.toggle('hidden', !!state.activePluginId || ef !== 'AudioVisualizer');
+  document.getElementById('blk-ambi').classList.toggle('hidden', !!state.activePluginId || ef !== 'ScreenAmbilight');
+  document.getElementById('blk-therm').classList.toggle('hidden', !!state.activePluginId || ef !== 'HardwareTelemetry');
+
+  const p = state.params || {};
+  document.getElementById('inp-hex').value = p.primaryColorHex || '#00E5FF';
+  document.getElementById('hex-box').style.background = p.primaryColorHex || '#00E5FF';
+  document.getElementById('sl-spd').value = p.speed ?? 1;
+  document.getElementById('val-spd').textContent = `${Number(p.speed ?? 1).toFixed(2)}x`;
+  document.getElementById('sl-scl').value = p.scale ?? 1;
+  document.getElementById('val-scl').textContent = `${Number(p.scale ?? 1).toFixed(2)}x`;
+  document.getElementById('dir-fwd').classList.toggle('active', !p.reverseDirection);
+  document.getElementById('dir-rev').classList.toggle('active', !!p.reverseDirection);
+
+  // Settings
+  const st = state.settings || {};
+  document.getElementById('s-lang').value = st.language || 'en';
+  applyLanguage(st.language || 'en');
+  document.getElementById('s-fps').value = String(st.targetFps || 60);
+  document.getElementById('s-startup').checked = !!st.startWithWindows;
+  document.getElementById('s-startmin').checked = !!st.startMinimizedToTray;
+  document.getElementById('s-mintray').checked = !!st.minimizeToTrayOnClose;
+  document.getElementById('s-hotkey').checked = !!st.enableGlobalBlackoutHotkey;
+  document.getElementById('s-watcher').checked = !!st.enableProcessWatcher;
+  document.getElementById('s-webremote').checked = !!st.enableLocalWebRemote;
+  document.getElementById('s-wled').checked = !!st.enableWledSync;
+  document.getElementById('s-wled-ip').value = st.wledIpAddress || '192.168.1.100';
+  document.getElementById('s-plugins-dir').textContent = state.pluginsPath || '';
+  document.getElementById('s-hid-name').textContent = (state.hidDiagnostics || {}).controllerName || 'ASRock Polychrome USB';
+
+  renderLibraryGrid();
+  renderStudioChannels();
+  renderDevicesGrid();
+  renderProfilesPage();
+}
+
+function renderProfilesPage() {
+  const list = document.getElementById('pr-list');
+  if (!list) return;
+  const selId = state.selectedProfileId || state.activeProfileId;
+  list.innerHTML = (state.profiles || []).map(p => `
+    <div class="card" data-prid="${p.id}" style="padding:10px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-color:${p.id===selId?'var(--accent-primary)':'var(--border-subtle)'}">
+      <div>
+        <div style="font-weight:600;font-size:13px">${p.name}</div>
+        <div style="font-size:11px;color:var(--accent-primary)">${p.effect} • ${(p.processes || []).length} .exe</div>
+      </div>
+      <button class="btn btn-accent btn-sm" data-prapply="${p.id}">Apply</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-prid]').forEach(el => {
+    el.onclick = e => {
+      if (e.target.closest('[data-prapply]')) return;
+      state.selectedProfileId = el.dataset.prid;
+      post('selectProfileEdit', { id: el.dataset.prid });
+      renderProfilesPage();
+    };
+  });
+  list.querySelectorAll('[data-prapply]').forEach(b => b.onclick = () => { post('applyProfile', { id: b.dataset.prapply }); showToast('Profile applied ✓'); });
+
+  const selProf = (state.profiles || []).find(p => p.id === selId) || (state.profiles || [])[0];
+  if (selProf) {
+    document.getElementById('pr-name').value = selProf.name;
+    const exes = document.getElementById('pr-exe-list');
+    exes.innerHTML = (selProf.processes || []).map(x => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 9px;border-radius:7px;background:rgba(10,12,18,0.8);border:1px solid var(--border-subtle)">
+        <span style="font-family:Consolas;font-size:11.5px;color:var(--accent-primary)">${x}</span>
+        <button class="btn btn-sm" data-prrem="${x}">×</button>
+      </div>
+    `).join('');
+    exes.querySelectorAll('[data-prrem]').forEach(b => b.onclick = () => post('removeProcess', { exe: b.dataset.prrem }));
+  }
+}
+
+function applyTick(m) {
+  document.getElementById('top-cpu').textContent = m.cpuTemp;
+  document.getElementById('top-gpu').textContent = m.gpuTemp;
+  document.getElementById('p-hid-pill').textContent = m.hidBadge;
+  document.getElementById('studio-fps-chip').textContent = m.hidBadge;
+  document.getElementById('c-cpu-temp').textContent = m.cpuTemp;
+  document.getElementById('c-gpu-temp').textContent = m.gpuTemp;
+  document.getElementById('c-cpu-load').textContent = m.cpuLoadText;
+  document.getElementById('c-gpu-load').textContent = m.gpuLoadText;
+  document.getElementById('c-cpu-bar').style.width = `${m.cpuLoad}%`;
+  document.getElementById('c-gpu-bar').style.width = `${m.gpuLoad}%`;
+  document.getElementById('c-fan-rpm').textContent = m.fanRpm;
+  document.getElementById('c-hid-lat').textContent = `${m.hidLatencyMs ?? 0} ms`;
+  document.getElementById('s-hid-lat').textContent = `${m.hidLatencyMs ?? 0} ms`;
+  const drLat = document.getElementById('dr-lat');
+  if (drLat) drLat.textContent = `${m.hidLatencyMs ?? 0} ms`;
+  const devLat = document.getElementById('dev-lat-chip');
+  if (devLat) devLat.textContent = `Latency: ${m.hidLatencyMs ?? 0} ms`;
+
+  if (m.bannerStrip) latestBannerStrip = m.bannerStrip;
+  if (m.zoneStrips) latestZoneStrips = m.zoneStrips;
+  if (m.cpuHistory && m.gpuHistory) {
+    cpuHist = m.cpuHistory; gpuHist = m.gpuHistory;
+    if (document.getElementById('page-cooling').classList.contains('active')) drawTempChart();
+  }
+}
+
+/* Wire Events */
+document.getElementById('drag-bar').onmousedown = e => { if (!e.target.closest('button,select,input') && e.button === 0) post('windowDrag'); };
+document.getElementById('drag-bar').ondblclick = e => { if (!e.target.closest('button,select,input')) post('windowMaximize'); };
+document.getElementById('win-min').onclick = () => post('windowMinimize');
+document.getElementById('win-max').onclick = () => post('windowMaximize');
+document.getElementById('win-close').onclick = () => post('windowClose');
+
+document.querySelectorAll('[data-nav]').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('[data-nav]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + b.dataset.nav).classList.add('active');
+    if (b.dataset.nav === 'cooling') drawTempChart();
+  };
+});
+
+document.querySelectorAll('#theme-filters .filter-pill').forEach(p => {
+  p.onclick = () => {
+    document.querySelectorAll('#theme-filters .filter-pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active'); themeFilter = p.dataset.tfilter; renderThemesGrid();
+  };
+});
+
+document.querySelectorAll('#lib-filters .filter-pill').forEach(p => {
+  p.onclick = () => {
+    document.querySelectorAll('#lib-filters .filter-pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active'); libFilter = p.dataset.filter; renderLibraryGrid();
+  };
+});
+document.getElementById('lib-search').oninput = e => { libQuery = e.target.value.trim().toLowerCase(); renderLibraryGrid(); };
+document.getElementById('btn-reload-plugins').onclick = () => { post('reloadPlugins'); showToast('Plugins reloaded ✓'); };
+
+document.querySelectorAll('[data-scat]').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('[data-scat]').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    ['general','hid','plugins','integrations','about'].forEach(k => document.getElementById('scat-' + k).classList.toggle('hidden', k !== b.dataset.scat));
+  };
+});
+
+document.getElementById('top-profile').onchange = e => { post('applyProfile', { id: e.target.value }); showToast('Profile switched ✓'); };
+document.getElementById('p-prev').onclick = () => post('stepEffect', { delta: -1 });
+document.getElementById('p-next').onclick = () => post('stepEffect', { delta: 1 });
+document.getElementById('p-play').onclick = () => post('togglePause');
+document.getElementById('p-blackout').onclick = () => post('toggleBlackout');
+document.getElementById('p-shuffle').onclick = () => {
+  const btn = document.getElementById('p-shuffle');
+  if (shuffleTimer) {
+    clearInterval(shuffleTimer); shuffleTimer = null;
+    btn.textContent = 'Shuffle: Off'; btn.classList.remove('btn-accent');
+  } else {
+    shuffleTimer = setInterval(() => post('stepEffect', { delta: 1 }), 15000);
+    btn.textContent = 'Shuffle: 15s'; btn.classList.add('btn-accent');
+    showToast('Playlist auto-cycle enabled (15s)');
+  }
+};
+
+const setBright = v => {
+  document.getElementById('p-bright').value = v;
+  document.getElementById('sl-bright').value = v;
+  document.getElementById('val-bright').textContent = `${v}%`;
+  post('setBrightness', { value: v / 100 });
+};
+document.getElementById('p-bright').oninput = e => setBright(+e.target.value);
+document.getElementById('sl-bright').oninput = e => setBright(+e.target.value);
+document.getElementById('inp-hex').onchange = e => { document.getElementById('hex-box').style.background = e.target.value; post('setParam', { key: 'PrimaryColorHex', value: e.target.value }); };
+document.getElementById('sl-spd').oninput = e => { document.getElementById('val-spd').textContent = `${(+e.target.value).toFixed(2)}x`; post('setParam', { key: 'Speed', value: +e.target.value }); };
+document.getElementById('sl-scl').oninput = e => { document.getElementById('val-scl').textContent = `${(+e.target.value).toFixed(2)}x`; post('setParam', { key: 'Scale', value: +e.target.value }); };
+document.getElementById('dir-fwd').onclick = () => { document.getElementById('dir-fwd').classList.add('active'); document.getElementById('dir-rev').classList.remove('active'); post('setParam', { key: 'ReverseDirection', value: false }); };
+document.getElementById('dir-rev').onclick = () => { document.getElementById('dir-rev').classList.add('active'); document.getElementById('dir-fwd').classList.remove('active'); post('setParam', { key: 'ReverseDirection', value: true }); };
+document.getElementById('sel-amode').onchange = e => post('setParam', { key: 'AudioMode', value: e.target.value });
+document.getElementById('sl-asens').oninput = e => { document.getElementById('val-asens').textContent = `${(+e.target.value).toFixed(2)}x`; post('setParam', { key: 'AudioSensitivity', value: +e.target.value }); };
+document.getElementById('sl-asmooth').oninput = e => { document.getElementById('val-asmooth').textContent = (+e.target.value).toFixed(2); post('setParam', { key: 'AmbilightSmoothing', value: +e.target.value }); };
+document.getElementById('sl-asat').oninput = e => { document.getElementById('val-asat').textContent = `${(+e.target.value).toFixed(2)}x`; post('setParam', { key: 'AmbilightSaturation', value: +e.target.value }); };
+document.getElementById('sl-tcool').oninput = e => { document.getElementById('val-tcool').textContent = `${e.target.value}°C`; post('setParam', { key: 'CoolTempC', value: +e.target.value }); };
+document.getElementById('sl-thot').oninput = e => { document.getElementById('val-thot').textContent = `${e.target.value}°C`; post('setParam', { key: 'HotTempC', value: +e.target.value }); };
+document.getElementById('btn-save-prof').onclick = () => { post('saveProfiles'); showToast('Profile saved ✓'); };
+document.getElementById('btn-sync-all-ch').onclick = () => { post('syncAllChannels'); showToast('All channels synced ✓'); };
+
+// Devices & Calibration Drawer
+document.getElementById('dev-btn-sync').onclick = () => { post('syncHardware'); showToast('Channels synced ✓'); };
+document.getElementById('dev-btn-reconnect').onclick = () => { post('reconnect'); showToast('Reconnecting USB HID...'); };
+document.getElementById('drawer-bg').onclick = closeHidDrawer;
+document.getElementById('dr-close').onclick = closeHidDrawer;
+document.getElementById('dr-cal-sl').oninput = e => {
+  const lit = +e.target.value;
+  document.getElementById('dr-cal-val').textContent = String(lit);
+  post('setCalibration', { channelIndex: +document.getElementById('dr-cal-ch').value, litCount: lit });
+};
+document.getElementById('dr-cal-stop').onclick = () => { post('stopCalibration'); document.getElementById('dr-cal-sl').value = 0; document.getElementById('dr-cal-val').textContent = '0'; showToast('Calibration preview stopped'); };
+document.getElementById('dr-copy-report').onclick = () => { post('copyHidReport'); showToast('HID Diagnostic Report copied to clipboard ✓'); };
+
+// Cooling
+document.getElementById('cool-btn-thermal').onclick = () => { post('selectEffect', { effect: 'HardwareTelemetry' }); showToast('Thermal lighting active ✓'); };
+document.getElementById('cc-sl-cool').oninput = e => { document.getElementById('cc-cool').textContent = `${e.target.value}°C`; post('setParam', { key: 'CoolTempC', value: +e.target.value }); };
+document.getElementById('cc-sl-warm').oninput = e => { document.getElementById('cc-warm').textContent = `${e.target.value}°C`; post('setParam', { key: 'WarmTempC', value: +e.target.value }); };
+document.getElementById('cc-sl-hot').oninput = e => { document.getElementById('cc-hot').textContent = `${e.target.value}°C`; post('setParam', { key: 'HotTempC', value: +e.target.value }); };
+
+// Theme Modals (Create / Export / Import)
+let modalMode = '';
+function openModal(mode) {
+  modalMode = mode;
+  document.getElementById('tm-create-body').classList.toggle('hidden', mode !== 'create');
+  document.getElementById('tm-code-body').classList.toggle('hidden', mode === 'create');
+  if (mode === 'create') {
+    document.getElementById('tm-title').textContent = 'Create Custom Theme';
+  } else if (mode === 'export') {
+    document.getElementById('tm-title').textContent = 'Export Theme Share Code';
+    const cur = [...BUILTIN_THEMES, ...customThemes].find(x => x.id === activeThemeId) || BUILTIN_THEMES[0];
+    document.getElementById('tm-code-txt').value = 'LUMINA-THEME-' + btoa(JSON.stringify(cur));
+  } else {
+    document.getElementById('tm-title').textContent = 'Import Theme Share Code';
+    document.getElementById('tm-code-txt').value = '';
+  }
+  document.getElementById('theme-modal').classList.remove('hidden');
+}
+document.getElementById('btn-create-theme').onclick = () => openModal('create');
+document.getElementById('btn-export-theme').onclick = () => openModal('export');
+document.getElementById('btn-import-theme').onclick = () => openModal('import');
+document.getElementById('tm-cancel').onclick = () => document.getElementById('theme-modal').classList.add('hidden');
+document.getElementById('tm-ok').onclick = () => {
+  if (modalMode === 'create') {
+    const t = {
+      id: 'custom-' + Date.now(),
+      name: document.getElementById('tm-name').value.trim() || 'Custom Theme',
+      bg: '#08090E', card: 'rgba(18,22,34,0.82)',
+      c1: document.getElementById('tm-c1').value, c2: document.getElementById('tm-c2').value,
+      fx: document.getElementById('tm-fx').value, hex: document.getElementById('tm-c1').value
+    };
+    customThemes.push(t);
+    localStorage.setItem('luminacore_themes', JSON.stringify(customThemes));
+    applyTheme(t, true);
+  } else if (modalMode === 'export') {
+    navigator.clipboard?.writeText(document.getElementById('tm-code-txt').value);
+    showToast('Share code copied ✓');
+  } else if (modalMode === 'import') {
+    try {
+      const raw = document.getElementById('tm-code-txt').value.trim().replace(/^LUMINA-THEME-/, '');
+      const parsed = JSON.parse(atob(raw));
+      parsed.id = 'imp-' + Date.now();
+      customThemes.push(parsed);
+      localStorage.setItem('luminacore_themes', JSON.stringify(customThemes));
+      applyTheme(parsed, true);
+    } catch { showToast('Invalid share code'); }
+  }
+  document.getElementById('theme-modal').classList.add('hidden');
+};
+
+const I18N = {
+  en: { set_general: 'General', set_lang: 'Language / Dil', set_fps: 'Render Target FPS', set_startup: 'Start with Windows', set_startmin: 'Start minimized to tray', set_mintray: 'Minimize to tray on close', set_hotkey: 'Global Blackout Hotkey (Ctrl+Alt+L)', set_watcher: 'Auto-switch profiles on game launch' },
+  tr: { set_general: 'Genel Ayarlar', set_lang: 'Dil / Language', set_fps: 'Hedef Kare Hızı (FPS)', set_startup: 'Windows ile Başlat', set_startmin: 'Tepside Küçültülmüş Başlat', set_mintray: 'Kapatınca Tepsiye Küçült', set_hotkey: 'Genel Karartma Kısayolu (Ctrl+Alt+L)', set_watcher: 'Oyun Açılınca Profili Otomatik Değiştir' }
+};
+function applyLanguage(lang) {
+  const dict = I18N[lang] || I18N.en;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    if (dict[k]) el.textContent = dict[k];
+  });
+  const navMap = lang === 'tr'
+    ? { themes: 'Temalar', library: 'Kütüphane', lighting: 'Aydınlatma', profiles: 'Profiller', devices: 'Cihazlar', cooling: 'Soğutma', settings: 'Ayarlar' }
+    : { themes: 'Themes', library: 'Library', lighting: 'Lighting', profiles: 'Profiles', devices: 'Devices', cooling: 'Cooling', settings: 'Settings' };
+  document.querySelectorAll('[data-nav]').forEach(b => {
+    const svg = b.querySelector('svg');
+    if (svg && navMap[b.dataset.nav]) { b.innerHTML = ''; b.appendChild(svg); b.append(' ' + navMap[b.dataset.nav]); }
+  });
+}
+
+// Settings actions
+document.getElementById('s-lang').onchange = e => { applyLanguage(e.target.value); post('updateSetting', { key: 'Language', value: e.target.value }); };
+document.getElementById('s-fps').onchange = e => post('updateSetting', { key: 'TargetFps', value: +e.target.value });
+document.getElementById('s-startup').onchange = e => post('updateSetting', { key: 'StartWithWindows', value: e.target.checked });
+document.getElementById('s-startmin').onchange = e => post('updateSetting', { key: 'StartMinimizedToTray', value: e.target.checked });
+document.getElementById('s-mintray').onchange = e => post('updateSetting', { key: 'MinimizeToTrayOnClose', value: e.target.checked });
+document.getElementById('s-hotkey').onchange = e => post('updateSetting', { key: 'EnableGlobalBlackoutHotkey', value: e.target.checked });
+document.getElementById('s-watcher').onchange = e => post('updateSetting', { key: 'EnableProcessWatcher', value: e.target.checked });
+document.getElementById('s-webremote').onchange = e => { post('updateSetting', { key: 'EnableLocalWebRemote', value: e.target.checked }); showToast(e.target.checked ? 'Web Remote active on http://localhost:5050' : 'Web Remote stopped'); };
+document.getElementById('s-wled').onchange = e => post('updateSetting', { key: 'EnableWledSync', value: e.target.checked });
+document.getElementById('s-wled-ip').onchange = e => post('updateSetting', { key: 'WledIpAddress', value: e.target.value });
+document.getElementById('s-btn-reconn').onclick = () => { post('reconnect'); showToast('Reconnecting USB HID...'); };
+document.getElementById('s-btn-copy-diag').onclick = () => { post('copyHidReport'); showToast('HID Diagnostic Report copied ✓'); };
+document.getElementById('s-btn-open-plugins').onclick = () => post('openPluginsFolder');
+document.getElementById('s-btn-reload-plugins').onclick = () => { post('reloadPlugins'); showToast('Plugins reloaded ✓'); };
+document.getElementById('s-btn-folder').onclick = () => post('openFolder');
+document.getElementById('s-btn-export').onclick = () => { post('exportProfiles'); showToast('Profiles backup exported ✓'); };
+document.getElementById('s-btn-update').onclick = () => { post('checkUpdates'); showToast('Checking GitHub Releases...'); };
+
+// Profiles actions
+document.getElementById('pr-new').onclick = () => { post('createProfile'); showToast('Profile created ✓'); };
+document.getElementById('pr-dup').onclick = () => { post('duplicateProfile'); showToast('Profile duplicated ✓'); };
+document.getElementById('pr-del').onclick = () => post('deleteProfile');
+document.getElementById('pr-name').onchange = e => post('renameSelectedProfile', { name: e.target.value });
+document.getElementById('pr-exe-add').onclick = () => {
+  const inp = document.getElementById('pr-exe-inp');
+  if (inp.value.trim()) { post('addProcess', { exe: inp.value.trim() }); inp.value = ''; }
+};
+document.querySelectorAll('[data-prexe]').forEach(b => b.onclick = () => post('addProcess', { exe: b.dataset.prexe }));
+document.getElementById('pr-save').onclick = () => { post('saveProfiles'); showToast('Profiles saved ✓'); };
+
+if (window.chrome && window.chrome.webview) {
+  window.chrome.webview.addEventListener('message', e => {
+    const msg = e.data; if (!msg) return;
+    if (msg.type === 'state') applyState(msg.payload);
+    else if (msg.type === 'tick') applyTick(msg.payload);
+    else if (msg.type === 'toast') showToast(msg.message);
+  });
+}
+
+initPicker();
+const initTheme = [...BUILTIN_THEMES, ...customThemes].find(x => x.id === activeThemeId) || BUILTIN_THEMES[0];
+applyTheme(initTheme, false);
+renderLibraryGrid();
+requestAnimationFrame(animationFrameLoop);
+post('ready');
+</script>
+</body>
+</html>
